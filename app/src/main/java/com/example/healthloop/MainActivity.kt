@@ -24,7 +24,8 @@ class MainActivity : ComponentActivity() {
                 var showSplash by remember { mutableStateOf(true) }
 
                 // Show splash screen for 3 seconds
-                LaunchedEffect(Unit) {
+                LaunchedEffect(Unit
+                ) {
                     delay(3000)
                     showSplash = false
                 }
