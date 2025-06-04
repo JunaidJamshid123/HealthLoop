@@ -1,6 +1,8 @@
 package com.example.healthloop.presentation.add_entry
 
 import androidx.lifecycle.viewModelScope
+import com.example.healthloop.HealthLoopApplication
+import com.example.healthloop.presentation.mapper.toDomain
 import com.example.healthloop.presentation.model.HealthEntryUiModel
 import com.example.healthloop.presentation.model.UiState
 import com.example.healthloop.presentation.viewmodel.BaseViewModel
@@ -10,6 +12,8 @@ import kotlinx.coroutines.launch
 import java.util.*
 
 class AddEntryViewModel : BaseViewModel<AddEntryUiState>() {
+
+    private val addHealthEntryUseCase = HealthLoopApplication.getInstance().addHealthEntryUseCase
 
     private val _waterIntake = MutableStateFlow("")
     val waterIntake: StateFlow<String> = _waterIntake
@@ -77,8 +81,10 @@ class AddEntryViewModel : BaseViewModel<AddEntryUiState>() {
                     weight = weightValue
                 )
 
-                // In a real app, this would save to repository
-                // For now, just simulate success
+                // Save to database using use case
+                val id = addHealthEntryUseCase(healthEntry.toDomain())
+                
+                // Set success flag
                 _saveSuccess.value = true
                 
                 // Reset form
