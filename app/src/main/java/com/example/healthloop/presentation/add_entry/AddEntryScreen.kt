@@ -188,7 +188,6 @@ fun AddEntryScreen(viewModel: AddEntryViewModel = viewModel()) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HealthInputCard(
     title: String,
