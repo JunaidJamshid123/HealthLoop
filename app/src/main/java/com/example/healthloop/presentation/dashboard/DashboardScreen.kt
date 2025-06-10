@@ -1,7 +1,6 @@
 package com.example.healthloop.presentation.dashboard
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,7 +11,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -20,29 +18,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.healthloop.presentation.model.HealthEntryUiModel
+import com.example.healthloop.presentation.model.TodayHealthDataUiModel
 import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
-fun DashboardScreen() {
-    // Sample data - replace with actual data from your repository/database
+fun DashboardScreen(dashboardViewModel: DashboardViewModel = viewModel()) {
     val currentDate = SimpleDateFormat("EEEE, MMM dd", Locale.getDefault()).format(Date())
-    val todayData = TodayHealthData(
-        waterIntake = 6,
-        targetWater = 8,
-        sleepHours = 7.5f,
-        targetSleep = 8f,
-        stepCount = 8500,
-        targetSteps = 10000,
-        mood = "😊",
-        weight = 70.5f
-    )
-
-    val recentEntries = listOf(
-        HealthEntry("Yesterday", "😐", 7, 7.0f, 9200, 69.8f),
-        HealthEntry("2 days ago", "😊", 8, 8.5f, 12000, 70.2f),
-        HealthEntry("3 days ago", "😔", 5, 6.0f, 6500, 70.0f)
-    )
+    val todayData by dashboardViewModel.todayHealthData.collectAsState()
+    val recentEntries by dashboardViewModel.recentHealthEntries.collectAsState()
+    val isLoading by dashboardViewModel.isLoading.collectAsState()
 
     Column(
         modifier = Modifier
@@ -56,20 +43,54 @@ fun DashboardScreen() {
 
         Spacer(modifier = Modifier.height(20.dp))
 
+        // Loading indicator
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
         // Today's Summary
-        TodaySummaryCard(todayData)
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Quick Stats Grid
-        QuickStatsGrid(todayData)
-
-        Spacer(modifier = Modifier.height(16.dp))
+        todayData?.let { data ->
+            TodaySummaryCard(data)
+            Spacer(modifier = Modifier.height(16.dp))
+            // Quick Stats Grid
+            QuickStatsGrid(data)
+            Spacer(modifier = Modifier.height(16.dp))
+        } ?: run {
+            if (!isLoading) {
+                // Display a message if no data for today
+                Text(
+                    text = "No health data recorded for today.",
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 20.dp),
+                    color = Color.Gray
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
 
         // Recent Entries
-        RecentEntriesSection(recentEntries)
-
-        Spacer(modifier = Modifier.height(20.dp))
+        if (recentEntries.isNotEmpty()) {
+            RecentEntriesSection(recentEntries)
+            Spacer(modifier = Modifier.height(20.dp))
+        } else if (todayData == null && !isLoading) {
+            Text(
+                text = "No recent health entries found.",
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 20.dp),
+                color = Color.Gray
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+        }
     }
 }
 
@@ -98,7 +119,7 @@ fun DashboardHeader(currentDate: String) {
 }
 
 @Composable
-fun TodaySummaryCard(data: TodayHealthData) {
+fun TodaySummaryCard(data: TodayHealthDataUiModel) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -163,7 +184,7 @@ fun TodaySummaryCard(data: TodayHealthData) {
 }
 
 @Composable
-fun QuickStatsGrid(data: TodayHealthData) {
+fun QuickStatsGrid(data: TodayHealthDataUiModel) {
     Column {
         Text(
             text = "Today's Progress",
@@ -186,7 +207,7 @@ fun QuickStatsGrid(data: TodayHealthData) {
                     current = data.waterIntake,
                     target = data.targetWater,
                     unit = "glasses",
-                    icon = Icons.Default.Face,
+                    icon = Icons.Default.WaterDrop,
                     modifier = Modifier.weight(1f)
                 )
 
@@ -195,21 +216,28 @@ fun QuickStatsGrid(data: TodayHealthData) {
                     current = data.sleepHours.toInt(),
                     target = data.targetSleep.toInt(),
                     unit = "hours",
-                    icon = Icons.Default.Face,
+                    icon = Icons.Default.Bedtime,
                     modifier = Modifier.weight(1f)
                 )
             }
 
-            // Steps (Full Width)
-            ProgressCard(
-                title = "Steps",
-                current = data.stepCount,
-                target = data.targetSteps,
-                unit = "steps",
-                icon = Icons.Default.ArrowForward,
-                modifier = Modifier.fillMaxWidth(),
-                isLarge = true
-            )
+            // Steps Row
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                ProgressCard(
+                    title = "Steps",
+                    current = data.stepCount,
+                    target = data.targetSteps,
+                    unit = "steps",
+                    icon = Icons.Default.DirectionsWalk,
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Empty spacer to balance the row
+                Spacer(modifier = Modifier.weight(1f))
+            }
         }
     }
 }
@@ -221,105 +249,45 @@ fun ProgressCard(
     target: Int,
     unit: String,
     icon: ImageVector,
-    modifier: Modifier = Modifier,
-    isLarge: Boolean = false
+    modifier: Modifier = Modifier
 ) {
-    val progress = (current.toFloat() / target.toFloat()).coerceIn(0f, 1f)
-    val progressPercentage = (progress * 100).toInt()
-
     Card(
-        modifier = modifier,
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(10.dp)
+        shape = RoundedCornerShape(8.dp)
     ) {
         Column(
             modifier = Modifier.padding(12.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 8.dp)
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = icon,
                     contentDescription = title,
-                    tint = Color.Black.copy(alpha = 0.8f),
-                    modifier = Modifier.size(16.dp)
+                    tint = Color.Black.copy(alpha = 0.7f),
+                    modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = title,
-                    fontSize = 12.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     color = Color.Black
                 )
             }
-
-            if (isLarge) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Bottom
-                ) {
-                    Column {
-                        Text(
-                            text = "$current",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black
-                        )
-                        Text(
-                            text = "of $target $unit",
-                            fontSize = 10.sp,
-                            color = Color.Black.copy(alpha = 0.6f)
-                        )
-                    }
-
-                    Text(
-                        text = "$progressPercentage%",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.Black
-                    )
-                }
-            } else {
-                Text(
-                    text = "$current",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
-                Text(
-                    text = "of $target $unit",
-                    fontSize = 10.sp,
-                    color = Color.Black.copy(alpha = 0.6f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Progress Bar
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(Color.Black.copy(alpha = 0.1f))
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(progress)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(Color.Black)
-                )
-            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "$current / $target $unit",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
         }
     }
 }
 
 @Composable
-fun RecentEntriesSection(entries: List<HealthEntry>) {
+fun RecentEntriesSection(entries: List<HealthEntryUiModel>) {
     Column {
         Text(
             text = "Recent Entries",
@@ -329,86 +297,119 @@ fun RecentEntriesSection(entries: List<HealthEntry>) {
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
-        Column(
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            entries.forEach { entry ->
-                RecentEntryCard(entry)
+        if (entries.isEmpty()) {
+            Text(
+                text = "No recent entries.",
+                fontSize = 14.sp,
+                color = Color.Gray,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 10.dp)
+            )
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                entries.forEach { entry ->
+                    RecentEntryItem(entry = entry)
+                }
             }
         }
     }
 }
 
 @Composable
-fun RecentEntryCard(entry: HealthEntry) {
+fun RecentEntryItem(entry: HealthEntryUiModel) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         shape = RoundedCornerShape(8.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(12.dp)
         ) {
-            Column {
-                Text(
-                    text = entry.date,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color.Black
-                )
-                Text(
-                    text = "${entry.water} glasses • ${entry.sleep}h sleep • ${entry.steps} steps",
-                    fontSize = 10.sp,
-                    color = Color.Black.copy(alpha = 0.6f)
-                )
-            }
+            Text(
+                text = entry.date,
+                fontSize = 12.sp,
+                color = Color.Gray
+            )
+            Spacer(modifier = Modifier.height(4.dp))
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically
+            // Better layout for recent entry data
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Text(
-                    text = entry.mood,
-                    fontSize = 20.sp
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "${entry.weight}kg",
-                    fontSize = 12.sp,
-                    color = Color.Black.copy(alpha = 0.8f)
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Water: ${entry.waterIntake} glasses",
+                        fontSize = 14.sp,
+                        color = Color.Black
+                    )
+                    Text(
+                        text = "Sleep: ${entry.sleepHours} hours",
+                        fontSize = 14.sp,
+                        color = Color.Black
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Steps: ${entry.stepCount}",
+                        fontSize = 14.sp,
+                        color = Color.Black
+                    )
+                    Text(
+                        text = "Mood: ${entry.mood}",
+                        fontSize = 14.sp,
+                        color = Color.Black
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    Text(
+                        text = "Weight: ${entry.weight} kg",
+                        fontSize = 14.sp,
+                        color = Color.Black
+                    )
+                }
             }
         }
     }
 }
 
-// Data Classes
-data class TodayHealthData(
-    val waterIntake: Int,
-    val targetWater: Int,
-    val sleepHours: Float,
-    val targetSleep: Float,
-    val stepCount: Int,
-    val targetSteps: Int,
-    val mood: String,
-    val weight: Float
-)
-
-data class HealthEntry(
-    val date: String,
-    val mood: String,
-    val water: Int,
-    val sleep: Float,
-    val steps: Int,
-    val weight: Float
-)
-
 @Preview(showBackground = true)
 @Composable
 fun DashboardScreenPreview() {
-    DashboardScreen()
+    // Create mock data for preview
+    val mockTodayData = TodayHealthDataUiModel(
+        waterIntake = 6,
+        targetWater = 8,
+        sleepHours = 7.5f,
+        targetSleep = 8f,
+        stepCount = 8500,
+        targetSteps = 10000,
+        mood = "😊",
+        weight = 75.5f
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+            .verticalScroll(rememberScrollState())
+            .padding(20.dp)
+    ) {
+        DashboardHeader("Monday, Jun 10")
+        Spacer(modifier = Modifier.height(20.dp))
+        TodaySummaryCard(mockTodayData)
+        Spacer(modifier = Modifier.height(16.dp))
+        QuickStatsGrid(mockTodayData)
+    }
 }

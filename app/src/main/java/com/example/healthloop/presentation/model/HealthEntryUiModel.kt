@@ -1,10 +1,8 @@
 package com.example.healthloop.presentation.model
 
-import java.util.Date
-
 data class HealthEntryUiModel(
     val id: Long = 0,
-    val date: Date,
+    val date: String,
     val waterIntake: Int, // in ml
     val sleepHours: Float,
     val stepCount: Int,

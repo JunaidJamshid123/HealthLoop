@@ -7,6 +7,7 @@ import com.example.healthloop.presentation.viewmodel.BaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.util.*
 
 class AnalysisViewModel : BaseViewModel<AnalysisUiState>() {
@@ -19,6 +20,9 @@ class AnalysisViewModel : BaseViewModel<AnalysisUiState>() {
 
     private val _selectedTimeRange = MutableStateFlow(TimeRange.WEEK)
     val selectedTimeRange: StateFlow<TimeRange> = _selectedTimeRange
+
+    // Date formatter for converting Date to String
+    private val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
     init {
         loadAnalysisData()
@@ -37,20 +41,20 @@ class AnalysisViewModel : BaseViewModel<AnalysisUiState>() {
     private fun loadAnalysisData() {
         viewModelScope.launch {
             updateState(UiState.Loading)
-            
+
             // This would normally come from a use case in the domain layer
             // For now, we'll use mock data
             val daysToFetch = when (_selectedTimeRange.value) {
                 TimeRange.WEEK -> 7
                 TimeRange.MONTH -> 30
             }
-            
+
             val mockEntries = generateMockEntries(daysToFetch)
             _entries.value = mockEntries
-            
+
             // Calculate statistics
             val stats = calculateStatistics(mockEntries, _selectedMetric.value)
-            
+
             updateState(UiState.Success(
                 AnalysisUiState(
                     entries = mockEntries,
@@ -68,7 +72,7 @@ class AnalysisViewModel : BaseViewModel<AnalysisUiState>() {
         if (entries.isEmpty()) {
             return Statistics(0f, 0f, 0f)
         }
-        
+
         val values = entries.map { entry ->
             when (metric) {
                 HealthMetric.WATER -> entry.waterIntake.toFloat()
@@ -77,7 +81,7 @@ class AnalysisViewModel : BaseViewModel<AnalysisUiState>() {
                 HealthMetric.WEIGHT -> entry.weight
             }
         }
-        
+
         return Statistics(
             average = values.average().toFloat(),  // Convert Double to Float here
             min = values.minOrNull() ?: 0f,
@@ -88,13 +92,13 @@ class AnalysisViewModel : BaseViewModel<AnalysisUiState>() {
     private fun generateMockEntries(count: Int): List<HealthEntryUiModel> {
         val entries = mutableListOf<HealthEntryUiModel>()
         val random = Random()
-        
+
         for (i in 0 until count) {
             val date = getDateBefore(i)
             entries.add(
                 HealthEntryUiModel(
                     id = i.toLong(),
-                    date = date,
+                    date = dateFormatter.format(date), // Convert Date to String here
                     waterIntake = 5 + random.nextInt(4), // 5-8 glasses
                     sleepHours = 6f + random.nextFloat() * 3f, // 6-9 hours
                     stepCount = 5000 + random.nextInt(10000), // 5000-15000 steps
@@ -103,7 +107,7 @@ class AnalysisViewModel : BaseViewModel<AnalysisUiState>() {
                 )
             )
         }
-        
+
         return entries.reversed() // Most recent first
     }
 
