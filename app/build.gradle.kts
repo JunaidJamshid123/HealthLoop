@@ -84,6 +84,9 @@ dependencies {
     // Additional utilities
     implementation("androidx.compose.runtime:runtime-livedata:1.6.1")
 
+    // WorkManager
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

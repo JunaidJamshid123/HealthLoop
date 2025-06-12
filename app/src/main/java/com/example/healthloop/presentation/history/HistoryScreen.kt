@@ -65,7 +65,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                         .fillMaxWidth()
                         .height(48.dp),
                     shape = RoundedCornerShape(10.dp),
-                    border = BorderStroke(1.dp, Color.Black.copy(alpha = 0.1f))
+                    border = ButtonDefaults.outlinedButtonBorder
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -116,6 +116,20 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                         CircularProgressIndicator()
                     }
                 }
+                is UiState.Error -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = (uiState as UiState.Error).message,
+                            color = Color.Red,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
                 is UiState.Success -> {
                     val data = (uiState as UiState.Success<HistoryUiState>).data
                     Text(
@@ -157,20 +171,6 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                                 Spacer(modifier = Modifier.height(20.dp))
                             }
                         }
-                    }
-                }
-                is UiState.Error -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = (uiState as UiState.Error).message,
-                            color = Color.Red,
-                            textAlign = TextAlign.Center
-                        )
                     }
                 }
             }

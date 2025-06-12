@@ -21,17 +21,14 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.healthloop.presentation.model.HealthEntryUiModel
 import com.example.healthloop.presentation.model.TodayHealthDataUiModel
+import com.example.healthloop.presentation.model.UiState
 import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
-fun DashboardScreen(
-    dashboardViewModel: DashboardViewModel = hiltViewModel()
-) {
-    val currentDate = SimpleDateFormat("EEEE, MMM dd", Locale.getDefault()).format(Date())
-    val todayData by dashboardViewModel.todayHealthData.collectAsState()
-    val recentEntries by dashboardViewModel.recentHealthEntries.collectAsState()
-    val isLoading by dashboardViewModel.isLoading.collectAsState()
+fun DashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
+    val uiState by viewModel.uiState.collectAsState()
+    val currentDate = remember { java.text.SimpleDateFormat("EEEE, MMM dd", Locale.getDefault()).format(Date()) }
 
     Column(
         modifier = Modifier
@@ -40,58 +37,48 @@ fun DashboardScreen(
             .verticalScroll(rememberScrollState())
             .padding(20.dp)
     ) {
-        // Header Section
         DashboardHeader(currentDate)
-
         Spacer(modifier = Modifier.height(20.dp))
-
-        // Loading indicator
-        if (isLoading) {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
+        when (uiState) {
+            is UiState.Loading -> {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
             }
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        // Today's Summary
-        todayData?.let { data ->
-            TodaySummaryCard(data)
-            Spacer(modifier = Modifier.height(16.dp))
-            // Quick Stats Grid
-            QuickStatsGrid(data)
-            Spacer(modifier = Modifier.height(16.dp))
-        } ?: run {
-            if (!isLoading) {
-                // Display a message if no data for today
+            is UiState.Error -> {
                 Text(
-                    text = "No health data recorded for today.",
+                    text = (uiState as UiState.Error).message,
+                    color = Color.Red,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 20.dp),
-                    color = Color.Gray
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp)
                 )
-                Spacer(modifier = Modifier.height(16.dp))
             }
-        }
-
-        // Recent Entries
-        if (recentEntries.isNotEmpty()) {
-            RecentEntriesSection(recentEntries)
-            Spacer(modifier = Modifier.height(20.dp))
-        } else if (todayData == null && !isLoading) {
-            Text(
-                text = "No recent health entries found.",
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 20.dp),
-                color = Color.Gray
-            )
-            Spacer(modifier = Modifier.height(20.dp))
+            is UiState.Success -> {
+                val data = (uiState as UiState.Success<DashboardUiState>).data
+                if (data.today == null) {
+                    Text(
+                        text = "No health data recorded for today.",
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp),
+                        color = Color.Gray
+                    )
+                } else {
+                    TodaySummaryCard(data.today)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    QuickStatsGrid(data.today)
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+                if (data.recent.isNotEmpty()) {
+                    RecentEntriesSection(data.recent)
+                } else if (data.today != null) {
+                    Text(
+                        text = "No recent health entries found.",
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp),
+                        color = Color.Gray
+                    )
+                }
+            }
         }
     }
 }
