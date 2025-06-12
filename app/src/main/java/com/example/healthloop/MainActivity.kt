@@ -13,20 +13,25 @@ import androidx.compose.ui.graphics.Color
 import com.example.healthloop.presentation.splash.SplashScreen
 import com.example.healthloop.presentation.navigation.MainScreenWithBottomNav
 import com.example.healthloop.ui.theme.HealthLoopTheme
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    companion object {
+        private const val SPLASH_DELAY = 3000L // 3 seconds
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
         setContent {
             HealthLoopTheme {
                 var showSplash by remember { mutableStateOf(true) }
 
-                // Show splash screen for 3 seconds
-                LaunchedEffect(Unit
-                ) {
-                    delay(3000)
+                LaunchedEffect(Unit) {
+                    delay(SPLASH_DELAY)
                     showSplash = false
                 }
 

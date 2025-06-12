@@ -27,12 +27,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.healthloop.presentation.model.UiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddEntryScreen(viewModel: AddEntryViewModel = viewModel()) {
+fun AddEntryScreen(viewModel: AddEntryViewModel = hiltViewModel()) {
     val waterIntake by viewModel.waterIntake.collectAsState()
     val sleepHours by viewModel.sleepHours.collectAsState()
     val stepCount by viewModel.stepCount.collectAsState()
@@ -47,6 +47,7 @@ fun AddEntryScreen(viewModel: AddEntryViewModel = viewModel()) {
     LaunchedEffect(saveSuccess) {
         if (saveSuccess) {
             Toast.makeText(context, "Entry saved successfully!", Toast.LENGTH_SHORT).show()
+            viewModel.clearSaveSuccess()
         }
     }
 
@@ -174,14 +175,22 @@ fun AddEntryScreen(viewModel: AddEntryViewModel = viewModel()) {
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.Black
             ),
-            shape = RoundedCornerShape(10.dp)
+            shape = RoundedCornerShape(10.dp),
+            enabled = uiState !is UiState.Loading
         ) {
-            Text(
-                text = "Save Entry",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.White
-            )
+            if (uiState is UiState.Loading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = Color.White
+                )
+            } else {
+                Text(
+                    text = "Save Entry",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.White
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -199,71 +208,49 @@ fun HealthInputCard(
     unit: String
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        ),
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(10.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(16.dp)
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                tint = Color.Black,
-                modifier = Modifier.size(24.dp)
-            )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column(
-                modifier = Modifier.weight(1f)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 8.dp)
             ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = Color.Black.copy(alpha = 0.7f),
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = title,
-                    fontSize = 14.sp,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
                     color = Color.Black
                 )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                OutlinedTextField(
-                    value = value,
-                    onValueChange = onValueChange,
-                    placeholder = {
-                        Text(
-                            text = placeholder,
-                            fontSize = 14.sp,
-                            color = Color.Gray
-                        )
-                    },
-                    keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.Black,
-                        unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f)
-                    )
-                )
             }
 
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Text(
-                text = unit,
-                fontSize = 14.sp,
-                color = Color.Gray,
-                modifier = Modifier.width(50.dp)
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                placeholder = { Text(placeholder) },
+                keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Black,
+                    unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f)
+                ),
+                suffix = {
+                    Text(
+                        text = unit,
+                        color = Color.Gray
+                    )
+                }
             )
         }
     }
@@ -276,32 +263,34 @@ fun MoodItem(
     isSelected: Boolean,
     onSelect: () -> Unit
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
+    Card(
         modifier = Modifier
-            .clip(RoundedCornerShape(10.dp))
-            .border(
-                width = if (isSelected) 2.dp else 1.dp,
-                color = if (isSelected) Color.Black else Color.Gray.copy(alpha = 0.3f),
-                shape = RoundedCornerShape(10.dp)
-            )
-            .background(if (isSelected) Color.Black.copy(alpha = 0.05f) else Color.White)
-            .clickable { onSelect() }
-            .padding(vertical = 12.dp, horizontal = 8.dp)
+            .fillMaxWidth()
+            .aspectRatio(1f)
+            .clickable(onClick = onSelect),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) Color.Black.copy(alpha = 0.1f) else Color.White
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(10.dp)
     ) {
-        Text(
-            text = emoji,
-            fontSize = 24.sp
-        )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Text(
-            text = description,
-            fontSize = 12.sp,
-            color = if (isSelected) Color.Black else Color.Gray,
-            textAlign = TextAlign.Center
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(8.dp)
+        ) {
+            Text(
+                text = emoji,
+                fontSize = 32.sp
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = description,
+                fontSize = 12.sp,
+                color = Color.Gray,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }
 

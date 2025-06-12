@@ -24,13 +24,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.healthloop.presentation.model.UiState
 import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
-fun HistoryScreen(viewModel: HistoryViewModel = viewModel()) {
+fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val selectedDateRange by viewModel.selectedDateRange.collectAsState()
     
@@ -107,7 +107,12 @@ fun HistoryScreen(viewModel: HistoryViewModel = viewModel()) {
             // Results count and state handling
             when (uiState) {
                 is UiState.Loading -> {
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
                         CircularProgressIndicator()
                     }
                 }
@@ -155,11 +160,18 @@ fun HistoryScreen(viewModel: HistoryViewModel = viewModel()) {
                     }
                 }
                 is UiState.Error -> {
-                    Text(
-                        text = (uiState as UiState.Error).message,
-                        color = Color.Red,
-                        modifier = Modifier.padding(16.dp)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = (uiState as UiState.Error).message,
+                            color = Color.Red,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
         }
@@ -214,13 +226,12 @@ fun EmptyHistoryState() {
         )
         
         Spacer(modifier = Modifier.height(8.dp))
-
+        
         Text(
-            text = "Start tracking your health by adding your first entry in the Add Entry tab.",
+            text = "Start tracking your health data by adding your first entry",
             fontSize = 14.sp,
-            color = Color.Black.copy(alpha = 0.5f),
-            textAlign = TextAlign.Center,
-            lineHeight = 20.sp
+            color = Color.Gray,
+            textAlign = TextAlign.Center
         )
     }
 }
@@ -236,7 +247,7 @@ fun HistoryEntryCard(entry: HistoryEntry) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            // Date and Mood Header
+            // Date and Day
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -245,34 +256,20 @@ fun HistoryEntryCard(entry: HistoryEntry) {
                 Column {
                     Text(
                         text = entry.date,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
                         color = Color.Black
                     )
                     Text(
                         text = entry.dayOfWeek,
                         fontSize = 12.sp,
-                        color = Color.Black.copy(alpha = 0.6f)
+                        color = Color.Gray
                     )
                 }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = entry.mood,
-                        fontSize = 24.sp
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    if (entry.isComplete) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = "Complete Entry",
-                            tint = Color.Green,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                }
+                Text(
+                    text = entry.mood,
+                    fontSize = 24.sp
+                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -282,36 +279,40 @@ fun HistoryEntryCard(entry: HistoryEntry) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Water
-                HistoryMetricItem(
+                HealthMetric(
                     icon = Icons.Default.WaterDrop,
-                    value = "${entry.waterIntake}",
-                    unit = "glasses",
-                    modifier = Modifier.weight(1f)
+                    value = "${entry.waterIntake} glasses",
+                    label = "Water"
                 )
-
-                // Sleep
-                HistoryMetricItem(
+                HealthMetric(
                     icon = Icons.Default.Bedtime,
-                    value = String.format("%.1f", entry.sleepHours),
-                    unit = "hours",
-                    modifier = Modifier.weight(1f)
+                    value = "${entry.sleepHours} hours",
+                    label = "Sleep"
                 )
-
-                // Steps
-                HistoryMetricItem(
+                HealthMetric(
                     icon = Icons.Default.DirectionsWalk,
-                    value = "${entry.stepCount}",
-                    unit = "steps",
-                    modifier = Modifier.weight(1f)
+                    value = "${entry.stepCount} steps",
+                    label = "Steps"
                 )
+            }
 
-                // Weight
-                HistoryMetricItem(
-                    icon = Icons.Default.FitnessCenter,
-                    value = String.format("%.1f", entry.weight),
-                    unit = "kg",
-                    modifier = Modifier.weight(1f)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Weight
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.FitnessCenter,
+                    contentDescription = "Weight",
+                    tint = Color.Gray,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "${entry.weight} kg",
+                    fontSize = 14.sp,
+                    color = Color.Black
                 )
             }
         }
@@ -319,41 +320,34 @@ fun HistoryEntryCard(entry: HistoryEntry) {
 }
 
 @Composable
-fun HistoryMetricItem(
+fun HealthMetric(
     icon: ImageVector,
     value: String,
-    unit: String,
-    modifier: Modifier = Modifier
+    label: String
 ) {
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier.padding(horizontal = 4.dp)
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = null,
-            tint = Color.Black.copy(alpha = 0.7f),
-            modifier = Modifier.size(16.dp)
+            contentDescription = label,
+            tint = Color.Gray,
+            modifier = Modifier.size(20.dp)
         )
-        
         Spacer(modifier = Modifier.height(4.dp))
-        
         Text(
             text = value,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
+            fontSize = 12.sp,
             color = Color.Black
         )
-        
         Text(
-            text = unit,
+            text = label,
             fontSize = 10.sp,
-            color = Color.Gray,
+            color = Color.Gray
         )
     }
 }
 
-// Data Classes
 data class HistoryEntry(
     val id: String,
     val date: String,

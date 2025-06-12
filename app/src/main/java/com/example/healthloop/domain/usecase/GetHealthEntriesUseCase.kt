@@ -3,6 +3,7 @@ package com.example.healthloop.domain.usecase
 import com.example.healthloop.domain.model.HealthEntry
 import com.example.healthloop.domain.repository.HealthRepository
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
 import java.util.Date
 
 class GetHealthEntriesUseCase(private val repository: HealthRepository) {

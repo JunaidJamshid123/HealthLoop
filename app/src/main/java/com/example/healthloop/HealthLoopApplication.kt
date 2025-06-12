@@ -6,7 +6,9 @@ import com.example.healthloop.data.repository.HealthRepositoryImpl
 import com.example.healthloop.domain.repository.HealthRepository
 import com.example.healthloop.domain.usecase.AddHealthEntryUseCase
 import com.example.healthloop.domain.usecase.GetHealthEntriesUseCase
+import dagger.hilt.android.HiltAndroidApp
 
+@HiltAndroidApp
 class HealthLoopApplication : Application() {
     
     // Lazy initialization of database
@@ -21,16 +23,7 @@ class HealthLoopApplication : Application() {
     val addHealthEntryUseCase by lazy { AddHealthEntryUseCase(repository) }
     val getHealthEntriesUseCase by lazy { GetHealthEntriesUseCase(repository) }
     
-    companion object {
-        private lateinit var instance: HealthLoopApplication
-        
-        fun getInstance(): HealthLoopApplication {
-            return instance
-        }
-    }
-    
     override fun onCreate() {
         super.onCreate()
-        instance = this
     }
 }

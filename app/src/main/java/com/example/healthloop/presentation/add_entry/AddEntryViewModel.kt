@@ -1,53 +1,63 @@
 package com.example.healthloop.presentation.add_entry
 
 import androidx.lifecycle.viewModelScope
-import com.example.healthloop.HealthLoopApplication
+import com.example.healthloop.domain.usecase.AddHealthEntryUseCase
 import com.example.healthloop.presentation.mapper.toDomain
 import com.example.healthloop.presentation.model.HealthEntryUiModel
 import com.example.healthloop.presentation.model.UiState
 import com.example.healthloop.presentation.viewmodel.BaseViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import javax.inject.Inject
 
-class AddEntryViewModel : BaseViewModel<AddEntryUiState>() {
-
-    private val addHealthEntryUseCase = HealthLoopApplication.getInstance().addHealthEntryUseCase
+@HiltViewModel
+class AddEntryViewModel @Inject constructor(
+    private val addHealthEntryUseCase: AddHealthEntryUseCase
+) : BaseViewModel<AddEntryUiState>() {
 
     private val _waterIntake = MutableStateFlow("")
-    val waterIntake: StateFlow<String> = _waterIntake
+    val waterIntake: StateFlow<String> = _waterIntake.asStateFlow()
 
     private val _sleepHours = MutableStateFlow("")
-    val sleepHours: StateFlow<String> = _sleepHours
+    val sleepHours: StateFlow<String> = _sleepHours.asStateFlow()
 
     private val _stepCount = MutableStateFlow("")
-    val stepCount: StateFlow<String> = _stepCount
+    val stepCount: StateFlow<String> = _stepCount.asStateFlow()
 
     private val _selectedMood = MutableStateFlow("")
-    val selectedMood: StateFlow<String> = _selectedMood
+    val selectedMood: StateFlow<String> = _selectedMood.asStateFlow()
 
     private val _weight = MutableStateFlow("")
-    val weight: StateFlow<String> = _weight
+    val weight: StateFlow<String> = _weight.asStateFlow()
 
     private val _saveSuccess = MutableStateFlow(false)
-    val saveSuccess: StateFlow<Boolean> = _saveSuccess
+    val saveSuccess: StateFlow<Boolean> = _saveSuccess.asStateFlow()
 
     init {
         updateState(UiState.Success(AddEntryUiState()))
     }
 
     fun updateWaterIntake(value: String) {
-        _waterIntake.value = value
+        if (value.isEmpty() || value.toIntOrNull() != null) {
+            _waterIntake.value = value
+        }
     }
 
     fun updateSleepHours(value: String) {
-        _sleepHours.value = value
+        if (value.isEmpty() || value.toFloatOrNull() != null) {
+            _sleepHours.value = value
+        }
     }
 
     fun updateStepCount(value: String) {
-        _stepCount.value = value
+        if (value.isEmpty() || value.toIntOrNull() != null) {
+            _stepCount.value = value
+        }
     }
 
     fun updateMood(value: String) {
@@ -55,12 +65,16 @@ class AddEntryViewModel : BaseViewModel<AddEntryUiState>() {
     }
 
     fun updateWeight(value: String) {
-        _weight.value = value
+        if (value.isEmpty() || value.toFloatOrNull() != null) {
+            _weight.value = value
+        }
     }
 
     fun saveEntry() {
         viewModelScope.launch {
             try {
+                updateState(UiState.Loading)
+
                 // Validate inputs
                 val waterIntakeValue = _waterIntake.value.toIntOrNull() ?: 0
                 val sleepHoursValue = _sleepHours.value.toFloatOrNull() ?: 0f
@@ -84,7 +98,7 @@ class AddEntryViewModel : BaseViewModel<AddEntryUiState>() {
                 )
 
                 // Save to database using use case
-                val id = addHealthEntryUseCase(healthEntry.toDomain())
+                addHealthEntryUseCase(healthEntry.toDomain())
 
                 // Set success flag
                 _saveSuccess.value = true
@@ -105,7 +119,6 @@ class AddEntryViewModel : BaseViewModel<AddEntryUiState>() {
         _stepCount.value = ""
         _selectedMood.value = ""
         _weight.value = ""
-        _saveSuccess.value = false
     }
 
     /**

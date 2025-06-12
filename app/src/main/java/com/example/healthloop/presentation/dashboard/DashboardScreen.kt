@@ -18,14 +18,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.healthloop.presentation.model.HealthEntryUiModel
 import com.example.healthloop.presentation.model.TodayHealthDataUiModel
 import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
-fun DashboardScreen(dashboardViewModel: DashboardViewModel = viewModel()) {
+fun DashboardScreen(
+    dashboardViewModel: DashboardViewModel = hiltViewModel()
+) {
     val currentDate = SimpleDateFormat("EEEE, MMM dd", Locale.getDefault()).format(Date())
     val todayData by dashboardViewModel.todayHealthData.collectAsState()
     val recentEntries by dashboardViewModel.recentHealthEntries.collectAsState()

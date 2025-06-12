@@ -6,9 +6,7 @@ import com.example.healthloop.domain.usecase.GetHealthEntriesUseCase
 import com.example.healthloop.presentation.model.HealthEntryUiModel
 import com.example.healthloop.presentation.model.TodayHealthDataUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -48,17 +46,21 @@ class DashboardViewModel @Inject constructor(
                 _isLoading.value = true
                 _errorMessage.value = null
 
-                // Get health entries from use case
-                getHealthEntriesUseCase().collect { healthEntries ->
-                    processHealthEntries(healthEntries)
-                    _isLoading.value = false
-                }
+                getHealthEntriesUseCase()
+                    .catch { e ->
+                        _errorMessage.value = "Failed to load health data: ${e.message}"
+                        _todayHealthData.value = null
+                        _recentHealthEntries.value = emptyList()
+                    }
+                    .collect { healthEntries ->
+                        processHealthEntries(healthEntries)
+                    }
             } catch (e: Exception) {
-                _isLoading.value = false
                 _errorMessage.value = "Failed to load health data: ${e.message}"
-                // Set empty states on error
                 _todayHealthData.value = null
                 _recentHealthEntries.value = emptyList()
+            } finally {
+                _isLoading.value = false
             }
         }
     }

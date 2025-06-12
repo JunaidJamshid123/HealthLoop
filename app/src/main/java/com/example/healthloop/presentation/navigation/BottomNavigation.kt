@@ -9,6 +9,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import com.example.healthloop.presentation.dashboard.DashboardScreen
 import com.example.healthloop.presentation.history.HistoryScreen
 import com.example.healthloop.presentation.add_entry.AddEntryScreen
@@ -30,7 +35,9 @@ sealed class BottomNavItem(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreenWithBottomNav() {
-    var selectedItem by remember { mutableStateOf(0) }
+    val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
     val items = listOf(
         BottomNavItem.Dashboard,
@@ -50,24 +57,27 @@ fun MainScreenWithBottomNav() {
                     .height(80.dp)
                     .navigationBarsPadding()
             ) {
-                items.forEachIndexed { index, item ->
+                items.forEach { item ->
                     NavigationBarItem(
                         icon = {
                             Icon(
                                 imageVector = item.icon,
                                 contentDescription = item.title,
-                                tint = if (selectedItem == index) Color.Black else Color.Gray
+                                tint = if (currentRoute == item.route) Color.Black else Color.Gray
                             )
                         },
                         label = {
                             Text(
                                 text = item.title,
-                                color = if (selectedItem == index) Color.Black else Color.Gray
+                                color = if (currentRoute == item.route) Color.Black else Color.Gray
                             )
                         },
-                        selected = selectedItem == index,
+                        selected = currentRoute == item.route,
                         onClick = {
-                            selectedItem = index
+                            navController.navigate(item.route) {
+                                popUpTo(navController.graph.startDestinationId)
+                                launchSingleTop = true
+                            }
                         },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = Color.Black,
@@ -81,18 +91,25 @@ fun MainScreenWithBottomNav() {
             }
         }
     ) { innerPadding ->
-        Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            color = Color.White
+        NavHost(
+            navController = navController,
+            startDestination = BottomNavItem.Dashboard.route,
+            modifier = Modifier.padding(innerPadding)
         ) {
-            when (selectedItem) {
-                0 -> DashboardScreen()
-                1 -> HistoryScreen()
-                2 -> AddEntryScreen()
-                3 -> AnalysisScreen()
-                4 -> SettingsScreen()
+            composable(BottomNavItem.Dashboard.route) {
+                DashboardScreen()
+            }
+            composable(BottomNavItem.History.route) {
+                HistoryScreen()
+            }
+            composable(BottomNavItem.AddEntry.route) {
+                AddEntryScreen()
+            }
+            composable(BottomNavItem.Analysis.route) {
+                AnalysisScreen()
+            }
+            composable(BottomNavItem.Settings.route) {
+                SettingsScreen()
             }
         }
     }

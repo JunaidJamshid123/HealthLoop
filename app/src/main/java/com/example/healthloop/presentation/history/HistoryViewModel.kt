@@ -1,26 +1,24 @@
 package com.example.healthloop.presentation.history
 
 import androidx.lifecycle.viewModelScope
-import com.example.healthloop.HealthLoopApplication
+import com.example.healthloop.domain.usecase.GetHealthEntriesUseCase
 import com.example.healthloop.presentation.mapper.toUiModels
 import com.example.healthloop.presentation.model.HealthEntryUiModel
 import com.example.healthloop.presentation.model.UiState
 import com.example.healthloop.presentation.viewmodel.BaseViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collectLatest
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.*
+import javax.inject.Inject
 
-class HistoryViewModel : BaseViewModel<HistoryUiState>() {
-
-    private val getHealthEntriesUseCase = HealthLoopApplication.getInstance().getHealthEntriesUseCase
-
-    private val _entries = MutableStateFlow<List<HealthEntryUiModel>>(emptyList())
-    val entries: StateFlow<List<HealthEntryUiModel>> = _entries
+@HiltViewModel
+class HistoryViewModel @Inject constructor(
+    private val getHealthEntriesUseCase: GetHealthEntriesUseCase
+) : BaseViewModel<HistoryUiState>() {
 
     private val _selectedDateRange = MutableStateFlow(DateRange.ALL_TIME)
-    val selectedDateRange: StateFlow<DateRange> = _selectedDateRange
+    val selectedDateRange: StateFlow<DateRange> = _selectedDateRange.asStateFlow()
 
     init {
         loadHistoryData()
@@ -33,36 +31,32 @@ class HistoryViewModel : BaseViewModel<HistoryUiState>() {
 
     private fun loadHistoryData() {
         viewModelScope.launch {
-            updateState(UiState.Loading)
-            
             try {
-                when (_selectedDateRange.value) {
+                updateState(UiState.Loading)
+                
+                val flow = when (_selectedDateRange.value) {
                     DateRange.ALL_TIME -> {
-                        getHealthEntriesUseCase().collectLatest { entries ->
-                            val uiEntries = entries.toUiModels()
-                            _entries.value = uiEntries
-                            updateState(UiState.Success(
-                                HistoryUiState(
-                                    entries = uiEntries,
-                                    dateRange = _selectedDateRange.value
-                                )
-                            ))
-                        }
+                        getHealthEntriesUseCase()
                     }
                     else -> {
                         val (startDate, endDate) = getDateRangeForFilter(_selectedDateRange.value)
-                        getHealthEntriesUseCase(startDate, endDate).collectLatest { entries ->
-                            val uiEntries = entries.toUiModels()
-                            _entries.value = uiEntries
-                            updateState(UiState.Success(
-                                HistoryUiState(
-                                    entries = uiEntries,
-                                    dateRange = _selectedDateRange.value
-                                )
-                            ))
-                        }
+                        getHealthEntriesUseCase(startDate, endDate)
                     }
                 }
+
+                flow
+                    .catch { e ->
+                        updateState(UiState.Error(e.message ?: "Failed to load history data"))
+                    }
+                    .collect { entries ->
+                        val uiEntries = entries.toUiModels()
+                        updateState(UiState.Success(
+                            HistoryUiState(
+                                entries = uiEntries,
+                                dateRange = _selectedDateRange.value
+                            )
+                        ))
+                    }
             } catch (e: Exception) {
                 updateState(UiState.Error(e.message ?: "Failed to load history data"))
             }
