@@ -11,7 +11,7 @@ private val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 fun HealthEntry.toUiModel(): HealthEntryUiModel {
     return HealthEntryUiModel(
         id = id,
-        date = dateFormatter.format(date), // Convert Date to String
+        date = date, // Pass Date object directly
         waterIntake = waterIntake,
         sleepHours = sleepHours,
         stepCount = stepCount,
@@ -23,11 +23,7 @@ fun HealthEntry.toUiModel(): HealthEntryUiModel {
 fun HealthEntryUiModel.toDomain(): HealthEntry {
     return HealthEntry(
         id = id,
-        date = try {
-            dateFormatter.parse(date) ?: Date() // Convert String to Date, fallback to current date
-        } catch (e: Exception) {
-            Date() // Fallback to current date if parsing fails
-        },
+        date = date, // Pass Date object directly
         waterIntake = waterIntake,
         sleepHours = sleepHours,
         stepCount = stepCount,

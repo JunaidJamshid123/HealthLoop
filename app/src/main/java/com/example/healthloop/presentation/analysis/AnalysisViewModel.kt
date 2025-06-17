@@ -98,7 +98,7 @@ class AnalysisViewModel : BaseViewModel<AnalysisUiState>() {
             entries.add(
                 HealthEntryUiModel(
                     id = i.toLong(),
-                    date = dateFormatter.format(date), // Convert Date to String here
+                    date = date, // Pass Date object directly
                     waterIntake = 5 + random.nextInt(4), // 5-8 glasses
                     sleepHours = 6f + random.nextFloat() * 3f, // 6-9 hours
                     stepCount = 5000 + random.nextInt(10000), // 5000-15000 steps

@@ -2,7 +2,7 @@ package com.example.healthloop.presentation.model
 
 data class HealthEntryUiModel(
     val id: Long = 0,
-    val date: String,
+    val date: java.util.Date,
     val waterIntake: Int, // in ml
     val sleepHours: Float,
     val stepCount: Int,

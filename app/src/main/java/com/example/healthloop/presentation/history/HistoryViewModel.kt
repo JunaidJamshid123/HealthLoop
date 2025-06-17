@@ -56,9 +56,7 @@ class HistoryViewModel @Inject constructor(
                     val uiEntries = entries.map {
                         HealthEntryUiModel(
                             id = it.id,
-                            date = try {
-                                SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(it.date)
-                            } catch (e: Exception) { "Unknown" },
+                            date = it.date,
                             waterIntake = it.waterIntake,
                             sleepHours = it.sleepHours,
                             stepCount = it.stepCount,

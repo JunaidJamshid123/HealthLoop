@@ -318,7 +318,7 @@ fun RecentEntryItem(entry: HealthEntryUiModel) {
             modifier = Modifier.padding(12.dp)
         ) {
             Text(
-                text = entry.date,
+                text = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(entry.date),
                 fontSize = 12.sp,
                 color = Color.Gray
             )

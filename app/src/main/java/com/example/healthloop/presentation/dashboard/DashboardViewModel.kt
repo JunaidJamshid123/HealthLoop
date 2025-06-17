@@ -59,7 +59,7 @@ class DashboardViewModel @Inject constructor(
                         val recent = if (sorted.size > 1) sorted.drop(1).take(5).map {
                             HealthEntryUiModel(
                                 id = it.id,
-                                date = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(it.date),
+                                date = it.date,
                                 waterIntake = it.waterIntake,
                                 sleepHours = it.sleepHours,
                                 stepCount = it.stepCount,

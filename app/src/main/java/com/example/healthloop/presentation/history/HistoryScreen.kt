@@ -151,11 +151,23 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                                 val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
                                 val dayFormat = SimpleDateFormat("EEEE", Locale.getDefault())
                                 
+                                val formattedDate = try {
+                                    dateFormat.format(entry.date)
+                                } catch (e: Exception) {
+                                    "Unknown Date"
+                                }
+                                
+                                val formattedDay = try {
+                                    dayFormat.format(entry.date)
+                                } catch (e: Exception) {
+                                    "Unknown Day"
+                                }
+                                
                                 HistoryEntryCard(
                                     HistoryEntry(
                                         id = entry.id.toString(),
-                                        date = dateFormat.format(entry.date),
-                                        dayOfWeek = dayFormat.format(entry.date),
+                                        date = formattedDate,
+                                        dayOfWeek = formattedDay,
                                         waterIntake = entry.waterIntake,
                                         sleepHours = entry.sleepHours,
                                         stepCount = entry.stepCount,
