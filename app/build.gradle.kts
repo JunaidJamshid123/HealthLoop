@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.healthloop"
-        minSdk = 24
+        minSdk = 28
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -78,14 +78,14 @@ dependencies {
     // Date and Time
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
 
-    // Charts for data visualization
-    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
-
     // Additional utilities
     implementation("androidx.compose.runtime:runtime-livedata:1.6.1")
 
     // WorkManager
     implementation("androidx.work:work-runtime-ktx:2.9.0")
+
+    // MPAndroidChart for charts and graphs
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 
     // Testing
     testImplementation(libs.junit)

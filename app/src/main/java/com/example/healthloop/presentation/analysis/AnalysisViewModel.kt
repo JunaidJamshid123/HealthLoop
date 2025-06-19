@@ -1,16 +1,25 @@
 package com.example.healthloop.presentation.analysis
 
 import androidx.lifecycle.viewModelScope
+import com.example.healthloop.domain.usecase.GetHealthEntriesUseCase
+import com.example.healthloop.presentation.mapper.toUiModels
 import com.example.healthloop.presentation.model.HealthEntryUiModel
 import com.example.healthloop.presentation.model.UiState
 import com.example.healthloop.presentation.viewmodel.BaseViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import javax.inject.Inject
 
-class AnalysisViewModel : BaseViewModel<AnalysisUiState>() {
+@HiltViewModel
+class AnalysisViewModel @Inject constructor(
+    private val getHealthEntriesUseCase: GetHealthEntriesUseCase
+) : BaseViewModel<AnalysisUiState>() {
 
     private val _entries = MutableStateFlow<List<HealthEntryUiModel>>(emptyList())
     val entries: StateFlow<List<HealthEntryUiModel>> = _entries
@@ -23,6 +32,9 @@ class AnalysisViewModel : BaseViewModel<AnalysisUiState>() {
 
     // Date formatter for converting Date to String
     private val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+
+    private val _state = MutableStateFlow<UiState<AnalysisUiState>>(UiState.Loading)
+    val state: StateFlow<UiState<AnalysisUiState>> get() = _state
 
     init {
         loadAnalysisData()
@@ -40,32 +52,38 @@ class AnalysisViewModel : BaseViewModel<AnalysisUiState>() {
 
     private fun loadAnalysisData() {
         viewModelScope.launch {
-            updateState(UiState.Loading)
-
-            // This would normally come from a use case in the domain layer
-            // For now, we'll use mock data
-            val daysToFetch = when (_selectedTimeRange.value) {
-                TimeRange.WEEK -> 7
-                TimeRange.MONTH -> 30
-            }
-
-            val mockEntries = generateMockEntries(daysToFetch)
-            _entries.value = mockEntries
-
-            // Calculate statistics
-            val stats = calculateStatistics(mockEntries, _selectedMetric.value)
-
-            updateState(UiState.Success(
-                AnalysisUiState(
-                    entries = mockEntries,
-                    metric = _selectedMetric.value,
-                    timeRange = _selectedTimeRange.value,
-                    average = stats.average,
-                    min = stats.min,
-                    max = stats.max
-                )
-            ))
+            _state.value = UiState.Loading
+            val (startDate, endDate) = getDateRange(_selectedTimeRange.value)
+            getHealthEntriesUseCase(startDate, endDate)
+                .catch { e ->
+                    _state.value = UiState.Error(e.message ?: "Failed to load analysis data")
+                }
+                .collectLatest { entries ->
+                    val uiEntries = entries.toUiModels().sortedBy { it.date }
+                    _entries.value = uiEntries
+                    val stats = calculateStatistics(uiEntries, _selectedMetric.value)
+                    _state.value = UiState.Success(
+                        AnalysisUiState(
+                            entries = uiEntries,
+                            metric = _selectedMetric.value,
+                            timeRange = _selectedTimeRange.value,
+                            average = stats.average,
+                            min = stats.min,
+                            max = stats.max
+                        )
+                    )
+                }
         }
+    }
+
+    private fun getDateRange(range: TimeRange): Pair<Date, Date> {
+        val end = Calendar.getInstance()
+        val start = Calendar.getInstance()
+        when (range) {
+            TimeRange.WEEK -> start.add(Calendar.DAY_OF_YEAR, -6)
+            TimeRange.MONTH -> start.add(Calendar.DAY_OF_YEAR, -29)
+        }
+        return Pair(start.time, end.time)
     }
 
     private fun calculateStatistics(entries: List<HealthEntryUiModel>, metric: HealthMetric): Statistics {
@@ -87,34 +105,6 @@ class AnalysisViewModel : BaseViewModel<AnalysisUiState>() {
             min = values.minOrNull() ?: 0f,
             max = values.maxOrNull() ?: 0f
         )
-    }
-
-    private fun generateMockEntries(count: Int): List<HealthEntryUiModel> {
-        val entries = mutableListOf<HealthEntryUiModel>()
-        val random = Random()
-
-        for (i in 0 until count) {
-            val date = getDateBefore(i)
-            entries.add(
-                HealthEntryUiModel(
-                    id = i.toLong(),
-                    date = date, // Pass Date object directly
-                    waterIntake = 5 + random.nextInt(4), // 5-8 glasses
-                    sleepHours = 6f + random.nextFloat() * 3f, // 6-9 hours
-                    stepCount = 5000 + random.nextInt(10000), // 5000-15000 steps
-                    mood = listOf("😊", "😐", "😔", "😴", "😤")[random.nextInt(5)],
-                    weight = 65f + random.nextFloat() * 10f // 65-75 kg
-                )
-            )
-        }
-
-        return entries.reversed() // Most recent first
-    }
-
-    private fun getDateBefore(days: Int): Date {
-        val calendar = Calendar.getInstance()
-        calendar.add(Calendar.DAY_OF_YEAR, -days)
-        return calendar.time
     }
 }
 
