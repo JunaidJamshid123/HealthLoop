@@ -26,161 +26,167 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.healthloop.presentation.model.UiState
+import com.example.healthloop.presentation.model.HealthEntryUiModel
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val selectedDateRange by viewModel.selectedDateRange.collectAsState()
-    
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
     val filterOptions = listOf(
-        DateRange.ALL_TIME to "All Time", 
-        DateRange.THIS_WEEK to "This Week", 
-        DateRange.THIS_MONTH to "This Month", 
-        DateRange.LAST_30_DAYS to "Last 30 Days", 
+        DateRange.ALL_TIME to "All Time",
+        DateRange.THIS_WEEK to "This Week",
+        DateRange.THIS_MONTH to "This Month",
+        DateRange.LAST_30_DAYS to "Last 30 Days",
         DateRange.LAST_90_DAYS to "Last 90 Days"
     )
-    
+
     var showFilterMenu by remember { mutableStateOf(false) }
-    
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-    ) {
-        // Header and Filter Section
+
+    Scaffold(
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        }
+    ) { paddingValues ->
         Column(
-            modifier = Modifier.padding(20.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White)
+                .padding(paddingValues)
         ) {
-            HistoryHeader()
+            // Header and Filter Section
+            Column(
+                modifier = Modifier.padding(20.dp)
+            ) {
+                HistoryHeader()
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            // Filter dropdown
-            Box {
-                OutlinedButton(
-                    onClick = { showFilterMenu = true },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(10.dp),
-                    border = ButtonDefaults.outlinedButtonBorder
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = filterOptions.find { it.first == selectedDateRange }?.second ?: "All Time",
-                            fontSize = 14.sp,
-                            color = Color.Black
-                        )
-                        Icon(
-                            imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = "Filter",
-                            tint = Color.Black
-                        )
-                    }
-                }
-
-                DropdownMenu(
-                    expanded = showFilterMenu,
-                    onDismissRequest = { showFilterMenu = false },
-                    modifier = Modifier.fillMaxWidth(0.9f)
-                ) {
-                    filterOptions.forEach { (range, label) ->
-                        DropdownMenuItem(
-                            text = { Text(label) },
-                            onClick = {
-                                viewModel.setDateRange(range)
-                                showFilterMenu = false
-                            }
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Results count and state handling
-            when (uiState) {
-                is UiState.Loading -> {
-                    Box(
+                // Filter dropdown
+                Box {
+                    OutlinedButton(
+                        onClick = { showFilterMenu = true },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 32.dp),
-                        contentAlignment = Alignment.Center
+                            .height(48.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        border = ButtonDefaults.outlinedButtonBorder
                     ) {
-                        CircularProgressIndicator()
-                    }
-                }
-                is UiState.Error -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = (uiState as UiState.Error).message,
-                            color = Color.Red,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-                is UiState.Success -> {
-                    val data = (uiState as UiState.Success<HistoryUiState>).data
-                    Text(
-                        text = "${data.entries.size} entries found",
-                        fontSize = 12.sp,
-                        color = Color.Black.copy(alpha = 0.6f)
-                    )
-                    
-                    // History List
-                    if (data.entries.isEmpty()) {
-                        EmptyHistoryState()
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            items(data.entries) { entry ->
-                                val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
-                                val dayFormat = SimpleDateFormat("EEEE", Locale.getDefault())
-                                
-                                val formattedDate = try {
-                                    dateFormat.format(entry.date)
-                                } catch (e: Exception) {
-                                    "Unknown Date"
-                                }
-                                
-                                val formattedDay = try {
-                                    dayFormat.format(entry.date)
-                                } catch (e: Exception) {
-                                    "Unknown Day"
-                                }
-                                
-                                HistoryEntryCard(
-                                    HistoryEntry(
-                                        id = entry.id.toString(),
-                                        date = formattedDate,
-                                        dayOfWeek = formattedDay,
-                                        waterIntake = entry.waterIntake,
-                                        sleepHours = entry.sleepHours,
-                                        stepCount = entry.stepCount,
-                                        mood = entry.mood,
-                                        weight = entry.weight,
-                                        isComplete = true
-                                    )
-                                )
-                            }
+                            Text(
+                                text = filterOptions.find { it.first == selectedDateRange }?.second ?: "All Time",
+                                fontSize = 14.sp,
+                                color = Color.Black
+                            )
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = "Filter",
+                                tint = Color.Black
+                            )
+                        }
+                    }
 
-                            // Bottom spacing
-                            item {
-                                Spacer(modifier = Modifier.height(20.dp))
+                    DropdownMenu(
+                        expanded = showFilterMenu,
+                        onDismissRequest = { showFilterMenu = false },
+                        modifier = Modifier.fillMaxWidth(0.9f)
+                    ) {
+                        filterOptions.forEach { (range, label) ->
+                            DropdownMenuItem(
+                                text = { Text(label) },
+                                onClick = {
+                                    viewModel.setDateRange(range)
+                                    showFilterMenu = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Results count and state handling
+                when (uiState) {
+                    is UiState.Loading -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                    is UiState.Error -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = (uiState as UiState.Error).message,
+                                color = Color.Red,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                    is UiState.Success -> {
+                        val data = (uiState as UiState.Success<HistoryUiState>).data
+                        Text(
+                            text = "${data.entries.size} entries found",
+                            fontSize = 12.sp,
+                            color = Color.Black.copy(alpha = 0.6f)
+                        )
+
+                        // History List
+                        if (data.entries.isEmpty()) {
+                            EmptyHistoryState()
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(data.entries, key = { it.id }) { entry ->
+                                    var isDeleted by remember { mutableStateOf(false) }
+                                    if (!isDeleted) {
+                                        HistoryEntryCard(
+                                            entry = entry,
+                                            onDelete = {
+                                                scope.launch {
+                                                    isDeleted = true
+                                                    // Call ViewModel delete method if it exists
+                                                    // viewModel.deleteEntry(entry)
+                                                    val result = snackbarHostState.showSnackbar(
+                                                        message = "Entry deleted",
+                                                        actionLabel = "Undo"
+                                                    )
+                                                    if (result == SnackbarResult.ActionPerformed) {
+                                                        isDeleted = false
+                                                        // Call ViewModel restore method if it exists
+                                                        // viewModel.restoreEntry(entry)
+                                                    }
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
+
+                                // Bottom spacing
+                                item {
+                                    Spacer(modifier = Modifier.height(20.dp))
+                                }
                             }
                         }
                     }
@@ -201,9 +207,9 @@ fun HistoryHeader() {
             fontWeight = FontWeight.Bold,
             color = Color.Black
         )
-        
+
         Spacer(modifier = Modifier.height(4.dp))
-        
+
         Text(
             text = "Track your progress over time",
             fontSize = 14.sp,
@@ -227,18 +233,18 @@ fun EmptyHistoryState() {
             modifier = Modifier.size(64.dp),
             tint = Color.Gray.copy(alpha = 0.5f)
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         Text(
             text = "No entries found",
             fontSize = 18.sp,
             fontWeight = FontWeight.Medium,
             color = Color.Black
         )
-        
+
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         Text(
             text = "Start tracking your health data by adding your first entry",
             fontSize = 14.sp,
@@ -249,9 +255,16 @@ fun EmptyHistoryState() {
 }
 
 @Composable
-fun HistoryEntryCard(entry: HistoryEntry) {
+fun HistoryEntryCard(
+    entry: HealthEntryUiModel,
+    onDelete: () -> Unit = {}
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                // Handle card click if needed
+            },
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(10.dp)
@@ -259,29 +272,49 @@ fun HistoryEntryCard(entry: HistoryEntry) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            // Date and Day
+            // Date and Day with delete option
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
+                    val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+                    val dayFormat = SimpleDateFormat("EEEE", Locale.getDefault())
+                    val formattedDate = try { dateFormat.format(entry.date) } catch (e: Exception) { "Unknown Date" }
+                    val formattedDay = try { dayFormat.format(entry.date) } catch (e: Exception) { "Unknown Day" }
                     Text(
-                        text = entry.date,
+                        text = formattedDate,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium,
                         color = Color.Black
                     )
                     Text(
-                        text = entry.dayOfWeek,
+                        text = formattedDay,
                         fontSize = 12.sp,
                         color = Color.Gray
                     )
                 }
-                Text(
-                    text = entry.mood,
-                    fontSize = 24.sp
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = entry.mood,
+                        fontSize = 24.sp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    IconButton(
+                        onClick = onDelete,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete entry",
+                            tint = Color.Red.copy(alpha = 0.7f),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -293,7 +326,7 @@ fun HistoryEntryCard(entry: HistoryEntry) {
             ) {
                 HealthMetric(
                     icon = Icons.Default.WaterDrop,
-                    value = "${entry.waterIntake} glasses",
+                    value = "${entry.waterIntake} ml",
                     label = "Water"
                 )
                 HealthMetric(
@@ -359,18 +392,6 @@ fun HealthMetric(
         )
     }
 }
-
-data class HistoryEntry(
-    val id: String,
-    val date: String,
-    val dayOfWeek: String,
-    val waterIntake: Int,
-    val sleepHours: Float,
-    val stepCount: Int,
-    val mood: String,
-    val weight: Float,
-    val isComplete: Boolean
-)
 
 @Preview(showBackground = true)
 @Composable

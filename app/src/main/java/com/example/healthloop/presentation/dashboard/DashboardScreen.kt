@@ -18,67 +18,96 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.healthloop.presentation.model.HealthEntryUiModel
 import com.example.healthloop.presentation.model.TodayHealthDataUiModel
 import com.example.healthloop.presentation.model.UiState
 import java.text.SimpleDateFormat
 import java.util.*
+import com.google.accompanist.placeholder.material.placeholder
+import com.google.accompanist.placeholder.PlaceholderHighlight
+import androidx.navigation.NavController
+import com.google.accompanist.placeholder.material.shimmer
+
+// Remove the old Material 2 imports that are causing issues
+// import androidx.compose.material.DismissDirection
+// import androidx.compose.material.DismissValue
+// import androidx.compose.material.SwipeToDismiss
+// import androidx.compose.material.rememberDismissState
+// import androidx.compose.material.rememberScaffoldState
+// import androidx.compose.material.SnackbarHostState
 
 @Composable
-fun DashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
+fun DashboardScreen(
+    viewModel: DashboardViewModel = hiltViewModel(),
+    navController: NavController? = null // Pass NavController from MainScreenWithBottomNav
+) {
     val uiState by viewModel.uiState.collectAsState()
     val currentDate = remember { java.text.SimpleDateFormat("EEEE, MMM dd", Locale.getDefault()).format(Date()) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .verticalScroll(rememberScrollState())
-            .padding(20.dp)
-    ) {
-        DashboardHeader(currentDate)
-        Spacer(modifier = Modifier.height(20.dp))
-        when (uiState) {
-            is UiState.Loading -> {
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White)
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp)
+        ) {
+            DashboardHeader(currentDate)
+            Spacer(modifier = Modifier.height(20.dp))
+            when (uiState) {
+                is UiState.Loading -> {
+                    ShimmerDashboard()
                 }
-            }
-            is UiState.Error -> {
-                Text(
-                    text = (uiState as UiState.Error).message,
-                    color = Color.Red,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp)
-                )
-            }
-            is UiState.Success -> {
-                val data = (uiState as UiState.Success<DashboardUiState>).data
-                if (data.today == null) {
+                is UiState.Error -> {
                     Text(
-                        text = "No health data recorded for today.",
+                        text = (uiState as UiState.Error).message,
+                        color = Color.Red,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp),
-                        color = Color.Gray
-                    )
-                } else {
-                    TodaySummaryCard(data.today)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    QuickStatsGrid(data.today)
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-                if (data.recent.isNotEmpty()) {
-                    RecentEntriesSection(data.recent)
-                } else if (data.today != null) {
-                    Text(
-                        text = "No recent health entries found.",
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp),
-                        color = Color.Gray
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp)
                     )
                 }
+                is UiState.Success -> {
+                    val data = (uiState as UiState.Success<DashboardUiState>).data
+                    if (data.today == null) {
+                        Text(
+                            text = "No health data recorded for today.",
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp),
+                            color = Color.Gray
+                        )
+                    } else {
+                        TodaySummaryCard(data.today)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        QuickStatsGrid(data.today)
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                    if (data.recent.isNotEmpty()) {
+                        RecentEntriesSection(data.recent)
+                    } else if (data.today != null) {
+                        Text(
+                            text = "No recent health entries found.",
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp),
+                            color = Color.Gray
+                        )
+                    }
+                }
             }
+        }
+        // FAB for quick add entry
+        FloatingActionButton(
+            onClick = {
+                navController?.navigate("add_entry")
+            },
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = Color.White,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(24.dp)
+        ) {
+            Icon(imageVector = Icons.Default.Add, contentDescription = "Add Entry")
         }
     }
 }
@@ -369,6 +398,63 @@ fun RecentEntryItem(entry: HealthEntryUiModel) {
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun ShimmerDashboard() {
+    Column {
+        // Shimmer TodaySummaryCard
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp)
+                .placeholder(
+                    visible = true,
+                    highlight = PlaceholderHighlight.shimmer()
+                ),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+            shape = RoundedCornerShape(12.dp)
+        ) {}
+        Spacer(modifier = Modifier.height(16.dp))
+        // Shimmer QuickStatsGrid
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            repeat(2) {
+                Card(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(80.dp)
+                        .placeholder(
+                            visible = true,
+                            highlight = PlaceholderHighlight.shimmer()
+                        ),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    shape = RoundedCornerShape(8.dp)
+                ) {}
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        // Shimmer RecentEntriesSection
+        repeat(2) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(70.dp)
+                    .padding(vertical = 4.dp)
+                    .placeholder(
+                        visible = true,
+                        highlight = PlaceholderHighlight.shimmer()
+                    ),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                shape = RoundedCornerShape(8.dp)
+            ) {}
         }
     }
 }

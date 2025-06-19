@@ -1,13 +1,21 @@
 package com.example.healthloop.presentation.navigation
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -19,6 +27,7 @@ import com.example.healthloop.presentation.history.HistoryScreen
 import com.example.healthloop.presentation.add_entry.AddEntryScreen
 import com.example.healthloop.presentation.analysis.AnalysisScreen
 import com.example.healthloop.presentation.settings.SettingsScreen
+import androidx.compose.ui.graphics.graphicsLayer
 
 sealed class BottomNavItem(
     val route: String,
@@ -26,9 +35,9 @@ sealed class BottomNavItem(
     val icon: ImageVector
 ) {
     object Dashboard : BottomNavItem("dashboard", "Home", Icons.Default.Home)
-    object History : BottomNavItem("history", "History", Icons.Default.Refresh)
-    object AddEntry : BottomNavItem("add_entry", "Add Entry", Icons.Default.Add)
-    object Analysis : BottomNavItem("analysis", "Analysis", Icons.Default.CheckCircle)
+    object History : BottomNavItem("history", "History", Icons.Default.History)
+    object AddEntry : BottomNavItem("add_entry", "Add", Icons.Default.Add)
+    object Analysis : BottomNavItem("analysis", "Analysis", Icons.Default.BarChart)
     object Settings : BottomNavItem("settings", "Settings", Icons.Default.Settings)
 }
 
@@ -38,6 +47,7 @@ fun MainScreenWithBottomNav() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val haptic = LocalHapticFeedback.current
 
     val items = listOf(
         BottomNavItem.Dashboard,
@@ -58,33 +68,43 @@ fun MainScreenWithBottomNav() {
                     .navigationBarsPadding()
             ) {
                 items.forEach { item ->
+                    val selected = currentRoute == item.route
+                    val iconColor by animateColorAsState(if (selected) Color.Black else Color.Gray)
+                    val iconScale by animateFloatAsState(if (selected) 1.2f else 1f)
                     NavigationBarItem(
                         icon = {
                             Icon(
                                 imageVector = item.icon,
                                 contentDescription = item.title,
-                                tint = if (currentRoute == item.route) Color.Black else Color.Gray
+                                tint = iconColor,
+                                modifier = Modifier.size(28.dp).graphicsLayer(scaleX = iconScale, scaleY = iconScale)
                             )
                         },
                         label = {
-                            Text(
-                                text = item.title,
-                                color = if (currentRoute == item.route) Color.Black else Color.Gray
-                            )
-                        },
-                        selected = currentRoute == item.route,
-                        onClick = {
-                            navController.navigate(item.route) {
-                                popUpTo(navController.graph.startDestinationId)
-                                launchSingleTop = true
+                            if (selected) {
+                                Text(
+                                    text = item.title,
+                                    color = Color.Black
+                                )
                             }
                         },
+                        selected = selected,
+                        onClick = {
+                            if (!selected) {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                navController.navigate(item.route) {
+                                    popUpTo(navController.graph.startDestinationId)
+                                    launchSingleTop = true
+                                }
+                            }
+                        },
+                        alwaysShowLabel = false,
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = Color.Black,
                             selectedTextColor = Color.Black,
                             unselectedIconColor = Color.Gray,
                             unselectedTextColor = Color.Gray,
-                            indicatorColor = Color.Black.copy(alpha = 0.1f)
+                            indicatorColor = Color.Black.copy(alpha = 0.08f)
                         )
                     )
                 }
@@ -97,7 +117,7 @@ fun MainScreenWithBottomNav() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(BottomNavItem.Dashboard.route) {
-                DashboardScreen()
+                DashboardScreen(navController = navController)
             }
             composable(BottomNavItem.History.route) {
                 HistoryScreen()

@@ -39,6 +39,7 @@ fun LineChartView(
             setScaleEnabled(true)
             setPinchZoom(true)
             setDrawGridBackground(false)
+            setHighlightPerTapEnabled(true)
             
             // Customize X axis
             xAxis.apply {
@@ -75,12 +76,14 @@ fun LineChartView(
             val dataSet = LineDataSet(entries, label).apply {
                 color = lineColor
                 setDrawCircles(true)
-                setDrawValues(false)
+                setDrawValues(true)
+                valueTextSize = 12f
                 lineWidth = 2f
                 circleRadius = 4f
                 setCircleColor(lineColor)
                 mode = LineDataSet.Mode.CUBIC_BEZIER
                 cubicIntensity = 0.2f
+                highLightColor = Color.RED
             }
             
             view.data = LineData(dataSet)
@@ -108,6 +111,7 @@ fun BarChartView(
             description.isEnabled = false
             setTouchEnabled(true)
             setDrawGridBackground(false)
+            setHighlightPerTapEnabled(true)
             xAxis.apply {
                 position = XAxis.XAxisPosition.BOTTOM
                 setDrawGridLines(false)
@@ -136,6 +140,8 @@ fun BarChartView(
             val dataSet = BarDataSet(entries, label).apply {
                 color = barColor
                 setDrawValues(true)
+                valueTextSize = 12f
+                highLightColor = Color.RED
             }
             view.data = BarData(dataSet)
             view.invalidate()
@@ -163,6 +169,7 @@ fun PieChartView(
             setUsePercentValues(true)
             setEntryLabelColor(Color.BLACK)
             setEntryLabelTextSize(12f)
+            setHighlightPerTapEnabled(true)
             animateY(1400)
         }
     }
@@ -183,6 +190,7 @@ fun PieChartView(
                 setDrawValues(true)
                 valueTextColor = Color.BLACK
                 valueTextSize = 14f
+
             }
             view.data = PieData(dataSet)
             view.invalidate()
