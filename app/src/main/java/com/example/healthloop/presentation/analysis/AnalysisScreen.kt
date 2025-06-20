@@ -28,6 +28,7 @@ import com.example.healthloop.presentation.analysis.TimeRange
 import com.example.healthloop.presentation.model.HealthEntryUiModel
 import com.example.healthloop.presentation.model.UiState
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.material3.MaterialTheme
 
 @Composable
 fun AnalysisScreen(
@@ -45,7 +46,7 @@ fun AnalysisScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(20.dp)
     ) {
@@ -82,14 +83,14 @@ fun AnalysisHeader() {
             text = "Health Analysis",
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = "Track your progress and trends",
             fontSize = 14.sp,
-            color = Color.Black.copy(alpha = 0.7f),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
             textAlign = TextAlign.Center
         )
     }
@@ -103,7 +104,7 @@ fun PeriodSelector(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(10.dp)
     ) {
@@ -112,7 +113,7 @@ fun PeriodSelector(
                 text = "Time Period",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             Row(
@@ -143,10 +144,10 @@ fun PeriodChip(
         modifier = modifier
             .clip(RoundedCornerShape(6.dp))
             .clickable { onClick() }
-            .background(if (isSelected) Color.Black else Color.Transparent)
+            .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
             .border(
                 width = 1.dp,
-                color = Color.Black.copy(alpha = 0.3f),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
                 shape = RoundedCornerShape(6.dp)
             )
             .padding(vertical = 8.dp, horizontal = 12.dp),
@@ -156,7 +157,7 @@ fun PeriodChip(
             text = text,
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
-            color = if (isSelected) Color.White else Color.Black,
+            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center
         )
     }
@@ -192,7 +193,7 @@ fun SummaryStatsSection(stats: AnalysisUiState) {
             text = "Average Summary",
             fontSize = 16.sp,
             fontWeight = FontWeight.SemiBold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(bottom = 8.dp)
         )
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -252,7 +253,7 @@ fun StatCard(
 ) {
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(10.dp)
     ) {
@@ -261,7 +262,7 @@ fun StatCard(
                 Icon(
                     imageVector = icon,
                     contentDescription = title,
-                    tint = Color.Black.copy(alpha = 0.8f),
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
@@ -269,25 +270,25 @@ fun StatCard(
                     text = title,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
             Text(
                 text = value,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = unit,
                 fontSize = 10.sp,
-                color = Color.Black.copy(alpha = 0.6f)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "Min: $min, Max: $max",
                 fontSize = 10.sp,
-                color = Color.Black.copy(alpha = 0.5f)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
             )
         }
     }
@@ -300,7 +301,7 @@ fun ChartsSection(entries: List<HealthEntryUiModel>, metric: HealthMetric) {
             text = "Trends & Charts",
             fontSize = 16.sp,
             fontWeight = FontWeight.SemiBold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(bottom = 8.dp)
         )
         Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
@@ -351,7 +352,7 @@ fun ChartsSection(entries: List<HealthEntryUiModel>, metric: HealthMetric) {
 fun ChartCard(title: String, content: @Composable () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(10.dp)
     ) {
@@ -360,7 +361,7 @@ fun ChartCard(title: String, content: @Composable () -> Unit) {
                 text = title,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             content()

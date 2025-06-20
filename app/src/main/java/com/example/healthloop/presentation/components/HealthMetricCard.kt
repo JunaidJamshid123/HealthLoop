@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material3.MaterialTheme
 
 @Composable
 fun HealthMetricCard(
@@ -22,7 +23,7 @@ fun HealthMetricCard(
     value: String,
     icon: ImageVector,
     backgroundColor: Color,
-    contentColor: Color = Color.White,
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
     progress: Float? = null
 ) {
     Card(

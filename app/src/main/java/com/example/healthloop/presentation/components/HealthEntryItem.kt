@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import com.example.healthloop.presentation.model.HealthEntryUiModel
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.material3.MaterialTheme
 
 @Composable
 fun HealthEntryItem(entry: HealthEntryUiModel) {
@@ -28,7 +29,7 @@ fun HealthEntryItem(entry: HealthEntryUiModel) {
             .padding(vertical = 8.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Column(
@@ -40,7 +41,8 @@ fun HealthEntryItem(entry: HealthEntryUiModel) {
             Text(
                 text = SimpleDateFormat("EEEE, MMM dd", Locale.getDefault()).format(entry.date),
                 fontWeight = FontWeight.Bold,
-                fontSize = 18.sp
+                fontSize = 18.sp,
+                color = MaterialTheme.colorScheme.onSurface
             )
             
             Spacer(modifier = Modifier.height(12.dp))

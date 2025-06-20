@@ -19,6 +19,7 @@ import com.example.healthloop.presentation.navigation.MainScreenWithBottomNav
 import com.example.healthloop.ui.theme.HealthLoopTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
+import androidx.compose.runtime.saveable.rememberSaveable
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -43,7 +44,8 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            HealthLoopTheme {
+            var darkTheme by rememberSaveable { mutableStateOf(false) }
+            HealthLoopTheme(darkTheme = darkTheme) {
                 var showSplash by remember { mutableStateOf(true) }
 
                 LaunchedEffect(Unit) {
@@ -55,12 +57,15 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier
                         .fillMaxSize()
                         .systemBarsPadding(),
-                    color = Color.White
+                    color = Color.Transparent
                 ) {
                     if (showSplash) {
                         SplashScreen()
                     } else {
-                        MainScreenWithBottomNav()
+                        MainScreenWithBottomNav(
+                            darkTheme = darkTheme,
+                            onToggleDarkTheme = { darkTheme = it }
+                        )
                     }
                 }
             }

@@ -14,18 +14,20 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(
+    darkTheme: Boolean,
+    onToggleDarkTheme: (Boolean) -> Unit
+) {
     var notificationsEnabled by remember { mutableStateOf(true) }
-    var darkModeEnabled by remember { mutableStateOf(false) }
     var googleFitSync by remember { mutableStateOf(false) }
     var selectedReminderTime by remember { mutableStateOf("9:00 AM") }
     var selectedWeightUnit by remember { mutableStateOf("kg") }
@@ -38,7 +40,7 @@ fun SettingsScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(20.dp)
     ) {
@@ -121,8 +123,8 @@ fun SettingsScreen() {
                 icon = Icons.Default.Home,
                 title = "Dark Mode",
                 subtitle = "Switch to dark theme",
-                isChecked = darkModeEnabled,
-                onToggle = { darkModeEnabled = it }
+                isChecked = darkTheme,
+                onToggle = onToggleDarkTheme
             )
         }
 
@@ -190,7 +192,7 @@ fun SettingsScreen() {
         Text(
             text = "HealthLoop v1.0.0",
             fontSize = 12.sp,
-            color = Color.Black.copy(alpha = 0.5f),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
         )
@@ -239,7 +241,7 @@ fun SettingsHeader() {
             text = "Settings",
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
 
@@ -248,7 +250,7 @@ fun SettingsHeader() {
         Text(
             text = "Customize your health tracking experience",
             fontSize = 14.sp,
-            color = Color.Black.copy(alpha = 0.7f),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
             textAlign = TextAlign.Center
         )
     }
@@ -264,13 +266,13 @@ fun SettingsSection(
             text = title,
             fontSize = 16.sp,
             fontWeight = FontWeight.SemiBold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
             shape = RoundedCornerShape(10.dp)
         ) {
@@ -301,7 +303,7 @@ fun SettingsToggleItem(
         Icon(
             imageVector = icon,
             contentDescription = title,
-            tint = Color.Black.copy(alpha = 0.8f),
+            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
             modifier = Modifier.size(20.dp)
         )
 
@@ -314,12 +316,12 @@ fun SettingsToggleItem(
                 text = title,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color.Black
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = subtitle,
                 fontSize = 12.sp,
-                color = Color.Black.copy(alpha = 0.6f)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
         }
 
@@ -327,10 +329,10 @@ fun SettingsToggleItem(
             checked = isChecked,
             onCheckedChange = onToggle,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
-                checkedTrackColor = Color.Black,
-                uncheckedThumbColor = Color.White,
-                uncheckedTrackColor = Color.Black.copy(alpha = 0.3f)
+                checkedThumbColor = MaterialTheme.colorScheme.surface,
+                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                uncheckedThumbColor = MaterialTheme.colorScheme.surface,
+                uncheckedTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
             )
         )
     }
@@ -354,7 +356,7 @@ fun SettingsClickableItem(
         Icon(
             imageVector = icon,
             contentDescription = title,
-            tint = if (isDestructive) Color(0xFFF44336) else Color.Black.copy(alpha = 0.8f),
+            tint = if (isDestructive) Color(0xFFF44336) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
             modifier = Modifier.size(20.dp)
         )
 
@@ -367,19 +369,19 @@ fun SettingsClickableItem(
                 text = title,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                color = if (isDestructive) Color(0xFFF44336) else Color.Black
+                color = if (isDestructive) Color(0xFFF44336) else MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = subtitle,
                 fontSize = 12.sp,
-                color = if (isDestructive) Color(0xFFF44336).copy(alpha = 0.7f) else Color.Black.copy(alpha = 0.6f)
+                color = if (isDestructive) Color(0xFFF44336).copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
         }
 
         Icon(
             imageVector = Icons.Default.Refresh,
             contentDescription = "Navigate",
-            tint = Color.Black.copy(alpha = 0.4f),
+            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
             modifier = Modifier.size(16.dp)
         )
     }
@@ -405,7 +407,7 @@ fun TimePickerDialog(
                 text = "Select Reminder Time",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color.Black
+                color = MaterialTheme.colorScheme.onSurface
             )
         },
         text = {
@@ -428,15 +430,15 @@ fun TimePickerDialog(
                                 onDismiss()
                             },
                             colors = RadioButtonDefaults.colors(
-                                selectedColor = Color.Black,
-                                unselectedColor = Color.Black.copy(alpha = 0.3f)
+                                selectedColor = MaterialTheme.colorScheme.primary,
+                                unselectedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                             )
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = time,
                             fontSize = 14.sp,
-                            color = Color.Black
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
@@ -448,11 +450,11 @@ fun TimePickerDialog(
             ) {
                 Text(
                     text = "Cancel",
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         },
-        containerColor = Color.White
+        containerColor = MaterialTheme.colorScheme.surface
     )
 }
 
@@ -471,7 +473,7 @@ fun UnitPickerDialog(
                 text = title,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color.Black
+                color = MaterialTheme.colorScheme.onSurface
             )
         },
         text = {
@@ -494,15 +496,15 @@ fun UnitPickerDialog(
                                 onDismiss()
                             },
                             colors = RadioButtonDefaults.colors(
-                                selectedColor = Color.Black,
-                                unselectedColor = Color.Black.copy(alpha = 0.3f)
+                                selectedColor = MaterialTheme.colorScheme.primary,
+                                unselectedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                             )
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = option,
                             fontSize = 14.sp,
-                            color = Color.Black
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
@@ -514,16 +516,16 @@ fun UnitPickerDialog(
             ) {
                 Text(
                     text = "Cancel",
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         },
-        containerColor = Color.White
+        containerColor = MaterialTheme.colorScheme.surface
     )
 }
 
 @Preview(showBackground = true)
 @Composable
 fun SettingsScreenPreview() {
-    SettingsScreen()
+    SettingsScreen(darkTheme = false, onToggleDarkTheme = {})
 }

@@ -30,6 +30,7 @@ import com.example.healthloop.presentation.model.HealthEntryUiModel
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlinx.coroutines.launch
+import androidx.compose.material3.MaterialTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,7 +58,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
+                .background(MaterialTheme.colorScheme.background)
                 .padding(paddingValues)
         ) {
             // Header and Filter Section
@@ -86,12 +87,12 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                             Text(
                                 text = filterOptions.find { it.first == selectedDateRange }?.second ?: "All Time",
                                 fontSize = 14.sp,
-                                color = Color.Black
+                                color = MaterialTheme.colorScheme.onBackground
                             )
                             Icon(
                                 imageVector = Icons.Default.ArrowDropDown,
                                 contentDescription = "Filter",
-                                tint = Color.Black
+                                tint = MaterialTheme.colorScheme.onBackground
                             )
                         }
                     }
@@ -136,7 +137,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                         ) {
                             Text(
                                 text = (uiState as UiState.Error).message,
-                                color = Color.Red,
+                                color = MaterialTheme.colorScheme.error,
                                 textAlign = TextAlign.Center
                             )
                         }
@@ -146,7 +147,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                         Text(
                             text = "${data.entries.size} entries found",
                             fontSize = 12.sp,
-                            color = Color.Black.copy(alpha = 0.6f)
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                         )
 
                         // History List
@@ -205,7 +206,7 @@ fun HistoryHeader() {
             text = "History",
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -213,7 +214,7 @@ fun HistoryHeader() {
         Text(
             text = "Track your progress over time",
             fontSize = 14.sp,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onBackground
         )
     }
 }
@@ -231,7 +232,7 @@ fun EmptyHistoryState() {
             imageVector = Icons.Default.History,
             contentDescription = "No History",
             modifier = Modifier.size(64.dp),
-            tint = Color.Gray.copy(alpha = 0.5f)
+            tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -240,7 +241,7 @@ fun EmptyHistoryState() {
             text = "No entries found",
             fontSize = 18.sp,
             fontWeight = FontWeight.Medium,
-            color = Color.Black
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -248,7 +249,7 @@ fun EmptyHistoryState() {
         Text(
             text = "Start tracking your health data by adding your first entry",
             fontSize = 14.sp,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
     }
@@ -265,7 +266,7 @@ fun HistoryEntryCard(
             .clickable {
                 // Handle card click if needed
             },
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(10.dp)
     ) {
@@ -287,12 +288,12 @@ fun HistoryEntryCard(
                         text = formattedDate,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
                         text = formattedDay,
                         fontSize = 12.sp,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                 }
                 Row(
@@ -310,7 +311,7 @@ fun HistoryEntryCard(
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Delete entry",
-                            tint = Color.Red.copy(alpha = 0.7f),
+                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -350,14 +351,14 @@ fun HistoryEntryCard(
                 Icon(
                     imageVector = Icons.Default.FitnessCenter,
                     contentDescription = "Weight",
-                    tint = Color.Gray,
+                    tint = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = "${entry.weight} kg",
                     fontSize = 14.sp,
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onBackground
                 )
             }
         }
@@ -376,19 +377,19 @@ fun HealthMetric(
         Icon(
             imageVector = icon,
             contentDescription = label,
-            tint = Color.Gray,
+            tint = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.size(20.dp)
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = value,
             fontSize = 12.sp,
-            color = Color.Black
+            color = MaterialTheme.colorScheme.onBackground
         )
         Text(
             text = label,
             fontSize = 10.sp,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onBackground
         )
     }
 }

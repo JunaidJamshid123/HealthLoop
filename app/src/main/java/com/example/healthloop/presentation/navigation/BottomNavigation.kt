@@ -28,6 +28,7 @@ import com.example.healthloop.presentation.add_entry.AddEntryScreen
 import com.example.healthloop.presentation.analysis.AnalysisScreen
 import com.example.healthloop.presentation.settings.SettingsScreen
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.material3.MaterialTheme
 
 sealed class BottomNavItem(
     val route: String,
@@ -43,7 +44,10 @@ sealed class BottomNavItem(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreenWithBottomNav() {
+fun MainScreenWithBottomNav(
+    darkTheme: Boolean,
+    onToggleDarkTheme: (Boolean) -> Unit
+) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -61,15 +65,15 @@ fun MainScreenWithBottomNav() {
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
             NavigationBar(
-                containerColor = Color.White,
-                contentColor = Color.Black,
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier
                     .height(80.dp)
                     .navigationBarsPadding()
             ) {
                 items.forEach { item ->
                     val selected = currentRoute == item.route
-                    val iconColor by animateColorAsState(if (selected) Color.Black else Color.Gray)
+                    val iconColor by animateColorAsState(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                     val iconScale by animateFloatAsState(if (selected) 1.2f else 1f)
                     NavigationBarItem(
                         icon = {
@@ -84,7 +88,7 @@ fun MainScreenWithBottomNav() {
                             if (selected) {
                                 Text(
                                     text = item.title,
-                                    color = Color.Black
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
                         },
@@ -100,11 +104,11 @@ fun MainScreenWithBottomNav() {
                         },
                         alwaysShowLabel = false,
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = Color.Black,
-                            selectedTextColor = Color.Black,
-                            unselectedIconColor = Color.Gray,
-                            unselectedTextColor = Color.Gray,
-                            indicatorColor = Color.Black.copy(alpha = 0.08f)
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            unselectedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
                         )
                     )
                 }
@@ -129,7 +133,10 @@ fun MainScreenWithBottomNav() {
                 AnalysisScreen()
             }
             composable(BottomNavItem.Settings.route) {
-                SettingsScreen()
+                SettingsScreen(
+                    darkTheme = darkTheme,
+                    onToggleDarkTheme = onToggleDarkTheme
+                )
             }
         }
     }

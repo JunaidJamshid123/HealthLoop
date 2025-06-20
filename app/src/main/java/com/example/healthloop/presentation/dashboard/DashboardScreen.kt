@@ -50,7 +50,7 @@ fun DashboardScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
+                .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(rememberScrollState())
                 .padding(20.dp)
         ) {
@@ -140,7 +140,7 @@ fun DashboardHeader(currentDate: String) {
 fun TodaySummaryCard(data: TodayHealthDataUiModel) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
         shape = RoundedCornerShape(12.dp)
     ) {
@@ -154,7 +154,7 @@ fun TodaySummaryCard(data: TodayHealthDataUiModel) {
                 Icon(
                     imageVector = Icons.Default.DateRange,
                     contentDescription = "Today",
-                    tint = Color.Black.copy(alpha = 0.8f),
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -162,7 +162,7 @@ fun TodaySummaryCard(data: TodayHealthDataUiModel) {
                     text = "Today's Summary",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -179,7 +179,7 @@ fun TodaySummaryCard(data: TodayHealthDataUiModel) {
                     Text(
                         text = "Mood",
                         fontSize = 12.sp,
-                        color = Color.Black.copy(alpha = 0.6f)
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                 }
 
@@ -188,12 +188,12 @@ fun TodaySummaryCard(data: TodayHealthDataUiModel) {
                         text = "${data.weight} kg",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = "Weight",
                         fontSize = 12.sp,
-                        color = Color.Black.copy(alpha = 0.6f)
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                 }
             }
@@ -208,7 +208,7 @@ fun QuickStatsGrid(data: TodayHealthDataUiModel) {
             text = "Today's Progress",
             fontSize = 16.sp,
             fontWeight = FontWeight.SemiBold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
@@ -271,7 +271,7 @@ fun ProgressCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(8.dp)
     ) {
@@ -282,7 +282,7 @@ fun ProgressCard(
                 Icon(
                     imageVector = icon,
                     contentDescription = title,
-                    tint = Color.Black.copy(alpha = 0.7f),
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
@@ -290,7 +290,7 @@ fun ProgressCard(
                     text = title,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -298,7 +298,7 @@ fun ProgressCard(
                 text = "$current / $target $unit",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
@@ -311,7 +311,7 @@ fun RecentEntriesSection(entries: List<HealthEntryUiModel>) {
             text = "Recent Entries",
             fontSize = 16.sp,
             fontWeight = FontWeight.SemiBold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
@@ -339,7 +339,7 @@ fun RecentEntriesSection(entries: List<HealthEntryUiModel>) {
 fun RecentEntryItem(entry: HealthEntryUiModel) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         shape = RoundedCornerShape(8.dp)
     ) {
@@ -364,12 +364,12 @@ fun RecentEntryItem(entry: HealthEntryUiModel) {
                     Text(
                         text = "Water: ${entry.waterIntake} glasses",
                         fontSize = 14.sp,
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = "Sleep: ${entry.sleepHours} hours",
                         fontSize = 14.sp,
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
                 Row(
@@ -379,12 +379,12 @@ fun RecentEntryItem(entry: HealthEntryUiModel) {
                     Text(
                         text = "Steps: ${entry.stepCount}",
                         fontSize = 14.sp,
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = "Mood: ${entry.mood}",
                         fontSize = 14.sp,
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
                 Row(
@@ -394,7 +394,7 @@ fun RecentEntryItem(entry: HealthEntryUiModel) {
                     Text(
                         text = "Weight: ${entry.weight} kg",
                         fontSize = 14.sp,
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -414,7 +414,7 @@ fun ShimmerDashboard() {
                     visible = true,
                     highlight = PlaceholderHighlight.shimmer()
                 ),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
             shape = RoundedCornerShape(12.dp)
         ) {}
@@ -433,7 +433,7 @@ fun ShimmerDashboard() {
                             visible = true,
                             highlight = PlaceholderHighlight.shimmer()
                         ),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                     shape = RoundedCornerShape(8.dp)
                 ) {}
@@ -451,7 +451,7 @@ fun ShimmerDashboard() {
                         visible = true,
                         highlight = PlaceholderHighlight.shimmer()
                     ),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                 shape = RoundedCornerShape(8.dp)
             ) {}
@@ -477,7 +477,7 @@ fun DashboardScreenPreview() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(20.dp)
     ) {
