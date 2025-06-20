@@ -19,20 +19,20 @@ Add your app screenshots in the `screenshots/` folder and they will appear here:
 ### SplashScreen
 ![SplashScreen](screenshots/pic.png)
 ### Dashboard
-![Dashboard](screenshots/pic1.png)
+![Dashboard](screenshots/pic1.PNG)
 
 ### History
-![History](screenshots/pic2.png)
+![History](screenshots/pic2.PNG)
 
 ### Add Entry Screen
-![Add Entry](screenshots/pic3.png)
+![Add Entry](screenshots/pic3.PNG)
 
 
 ### Analysis
-![Analysis](screenshots/pic4.png)
+![Analysis](screenshots/pic4.PNG)
 
 ### Setting
-![Setting](screenshots/pic5.png)
+![Setting](screenshots/pic5.PNG)
 
 ---
 
