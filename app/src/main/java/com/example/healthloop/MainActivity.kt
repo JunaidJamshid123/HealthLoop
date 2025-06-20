@@ -1,9 +1,13 @@
 package com.example.healthloop
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.Surface
@@ -26,6 +30,18 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
+        // Request notification permission for Android 13+
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            val permission = Manifest.permission.POST_NOTIFICATIONS
+            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+                val requestPermissionLauncher =
+                    registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+                        // Optionally handle the result
+                    }
+                requestPermissionLauncher.launch(permission)
+            }
+        }
+
         setContent {
             HealthLoopTheme {
                 var showSplash by remember { mutableStateOf(true) }

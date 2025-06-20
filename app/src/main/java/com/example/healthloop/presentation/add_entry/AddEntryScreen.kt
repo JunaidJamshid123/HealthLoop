@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.healthloop.presentation.model.UiState
+import com.example.healthloop.util.NotificationManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,10 +44,11 @@ fun AddEntryScreen(viewModel: AddEntryViewModel = hiltViewModel()) {
 
     val context = LocalContext.current
 
-    // Show toast when save is successful
+    // Show toast and notification when save is successful
     LaunchedEffect(saveSuccess) {
         if (saveSuccess) {
             Toast.makeText(context, "Entry saved successfully!", Toast.LENGTH_SHORT).show()
+            NotificationManager(context).showEntryAddedNotification()
             viewModel.clearSaveSuccess()
         }
     }
