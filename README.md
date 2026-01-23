@@ -176,14 +176,18 @@ app/
    - Connect a device or start an emulator
    - Click Run ▶️
 
-### API Configuration (Optional)
-The AI Assistant uses Google Gemini API. The API key is pre-configured, but you can replace it:
+### API Configuration (Required for AI Assistant)
+The AI Assistant requires a Google Gemini API key. To set it up:
 
 1. Get your API key from [Google AI Studio](https://aistudio.google.com/)
-2. Update the key in `AIAssistantRepositoryImpl.kt`:
-   ```kotlin
-   private const val API_KEY = "YOUR_API_KEY"
+2. Open `local.properties` file in the project root
+3. Add your API key:
+   ```properties
+   GEMINI_API_KEY=your_api_key_here
    ```
+4. Rebuild the project
+
+> ⚠️ **Note:** `local.properties` is gitignored and will NOT be committed to version control, keeping your API key safe.
 
 ---
 

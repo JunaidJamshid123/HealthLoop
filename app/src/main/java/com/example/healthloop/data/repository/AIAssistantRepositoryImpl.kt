@@ -1,5 +1,6 @@
 package com.example.healthloop.data.repository
 
+import com.example.healthloop.BuildConfig
 import com.example.healthloop.data.remote.Content
 import com.example.healthloop.data.remote.GeminiApiService
 import com.example.healthloop.data.remote.GeminiRequest
@@ -17,7 +18,8 @@ class AIAssistantRepositoryImpl @Inject constructor(
 ) : AIAssistantRepository {
 
     companion object {
-        private const val API_KEY = "AIzaSyD9L7M9N4yNh2yN6QzIauUSY0gbhIUhHog"
+        // API key is loaded securely from local.properties via BuildConfig
+        private val API_KEY = BuildConfig.GEMINI_API_KEY
         private const val MODEL = "gemini-2.0-flash"
     }
 
