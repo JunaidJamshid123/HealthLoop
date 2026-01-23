@@ -11,7 +11,9 @@ fun HealthEntry.toEntity(): HealthEntryEntity {
         sleepHours = sleepHours,
         stepCount = stepCount,
         mood = mood,
-        weight = weight
+        weight = weight,
+        calories = calories,
+        exerciseMinutes = exerciseMinutes
     )
 }
 
@@ -23,6 +25,8 @@ fun HealthEntryEntity.toDomain(): HealthEntry {
         sleepHours = sleepHours,
         stepCount = stepCount,
         mood = mood,
-        weight = weight
+        weight = weight,
+        calories = calories,
+        exerciseMinutes = exerciseMinutes
     )
 }

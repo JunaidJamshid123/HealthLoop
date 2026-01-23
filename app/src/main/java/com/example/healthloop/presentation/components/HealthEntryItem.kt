@@ -84,6 +84,24 @@ fun HealthEntryItem(entry: HealthEntryUiModel) {
             
             Spacer(modifier = Modifier.height(8.dp))
             
+            Row(modifier = Modifier.fillMaxWidth()) {
+                MetricItem(
+                    icon = Icons.Default.LocalFireDepartment,
+                    value = "${entry.calories} kcal",
+                    label = "Calories",
+                    modifier = Modifier.weight(1f)
+                )
+                
+                MetricItem(
+                    icon = Icons.Default.FitnessCenter,
+                    value = "${entry.exerciseMinutes} mins",
+                    label = "Exercise",
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
             // Mood
             Row(
                 verticalAlignment = Alignment.CenterVertically,

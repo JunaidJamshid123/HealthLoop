@@ -16,7 +16,9 @@ fun HealthEntry.toUiModel(): HealthEntryUiModel {
         sleepHours = sleepHours,
         stepCount = stepCount,
         mood = mood,
-        weight = weight
+        weight = weight,
+        calories = calories,
+        exerciseMinutes = exerciseMinutes
     )
 }
 
@@ -28,7 +30,9 @@ fun HealthEntryUiModel.toDomain(): HealthEntry {
         sleepHours = sleepHours,
         stepCount = stepCount,
         mood = mood,
-        weight = weight
+        weight = weight,
+        calories = calories,
+        exerciseMinutes = exerciseMinutes
     )
 }
 

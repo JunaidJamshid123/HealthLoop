@@ -87,6 +87,24 @@ dependencies {
     // MPAndroidChart for charts and graphs
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 
+    // Vico Charts for Compose
+    implementation("com.patrykandpatrick.vico:compose:1.13.1")
+    implementation("com.patrykandpatrick.vico:compose-m3:1.13.1")
+    implementation("com.patrykandpatrick.vico:core:1.13.1")
+
+    // Coil for image loading
+    implementation("io.coil-kt:coil-compose:2.5.0")
+    
+    // ExifInterface for image rotation handling
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
+
+    // OkHttp & Retrofit for API calls (Gemini AI)
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.google.code.gson:gson:2.10.1")
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -13,5 +13,7 @@ data class HealthEntryEntity(
     val sleepHours: Float,
     val stepCount: Int,
     val mood: String,
-    val weight: Float
+    val weight: Float,
+    val calories: Int = 0,
+    val exerciseMinutes: Int = 0
 )

@@ -2,6 +2,7 @@ package com.example.healthloop.di
 
 import android.content.Context
 import androidx.room.Room
+import com.example.healthloop.data.local.dao.UserProfileDao
 import com.example.healthloop.data.local.database.HealthLoopDatabase
 import dagger.Module
 import dagger.Provides
@@ -23,6 +24,14 @@ object DatabaseModule {
             context,
             HealthLoopDatabase::class.java,
             "health_loop_db"
-        ).build()
+        )
+        .fallbackToDestructiveMigration()
+        .build()
+    }
+    
+    @Provides
+    @Singleton
+    fun provideUserProfileDao(database: HealthLoopDatabase): UserProfileDao {
+        return database.userProfileDao()
     }
 } 

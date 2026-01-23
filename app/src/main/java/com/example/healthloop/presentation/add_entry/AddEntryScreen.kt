@@ -2,12 +2,10 @@ package com.example.healthloop.presentation.add_entry
 
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -31,6 +29,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.healthloop.presentation.model.UiState
 import com.example.healthloop.util.NotificationManager
 import androidx.compose.material3.MaterialTheme
+import com.example.healthloop.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,15 +39,19 @@ fun AddEntryScreen(viewModel: AddEntryViewModel = hiltViewModel()) {
     val stepCount by viewModel.stepCount.collectAsState()
     val selectedMood by viewModel.selectedMood.collectAsState()
     val weight by viewModel.weight.collectAsState()
+    val calories by viewModel.calories.collectAsState()
+    val exerciseMinutes by viewModel.exerciseMinutes.collectAsState()
     val saveSuccess by viewModel.saveSuccess.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
+    val isEditing by viewModel.isEditing.collectAsState()
 
     val context = LocalContext.current
 
     // Show toast and notification when save is successful
     LaunchedEffect(saveSuccess) {
         if (saveSuccess) {
-            Toast.makeText(context, "Entry saved successfully!", Toast.LENGTH_SHORT).show()
+            val message = if (isEditing) "Entry updated successfully!" else "Entry saved successfully!"
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             NotificationManager(context).showEntryAddedNotification()
             viewModel.clearSaveSuccess()
         }
@@ -62,12 +65,14 @@ fun AddEntryScreen(viewModel: AddEntryViewModel = hiltViewModel()) {
     }
 
     val moods = listOf(
-        "😊" to "Happy",
-        "😐" to "Neutral",
-        "😔" to "Sad",
-        "😴" to "Tired",
-        "😤" to "Stressed",
-        "🤒" to "Sick"
+        "\uD83D\uDE0A" to "Happy",
+        "\uD83D\uDE22" to "Sad",
+        "\uD83D\uDE20" to "Angry",
+        "\uD83D\uDE30" to "Anxious",
+        "\uD83E\uDD29" to "Excited",
+        "\uD83D\uDE34" to "Tired",
+        "\uD83D\uDE0C" to "Calm",
+        "\uD83C\uDF1F" to "Grateful"
     )
 
     Column(
@@ -75,223 +80,316 @@ fun AddEntryScreen(viewModel: AddEntryViewModel = hiltViewModel()) {
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
-            .padding(20.dp),
+            .padding(horizontal = 20.dp)
+            .padding(top = 16.dp, bottom = 100.dp),
     ) {
+        // Header
         Text(
-            text = "Add Entry",
-            fontSize = 24.sp,
+            text = if (isEditing) "Edit Entry" else "New Entry",
+            fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
+        )
+        
+        Text(
+            text = if (isEditing) "Update today's health data" else "Track your daily health",
+            fontSize = 14.sp,
+            color = TextSecondary,
+            modifier = Modifier.padding(top = 4.dp)
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Water Intake Input
-        HealthInputCard(
-            title = "Water Intake",
-            icon = Icons.Default.WaterDrop,
-            value = waterIntake,
-            onValueChange = { viewModel.updateWaterIntake(it) },
-            placeholder = "Enter glasses",
-            keyboardType = KeyboardType.Number,
-            unit = "glasses"
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Sleep Hours Input
-        HealthInputCard(
-            title = "Sleep Hours",
-            icon = Icons.Default.Bedtime,
-            value = sleepHours,
-            onValueChange = { viewModel.updateSleepHours(it) },
-            placeholder = "Enter hours",
-            keyboardType = KeyboardType.Decimal,
-            unit = "hours"
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Step Count Input
-        HealthInputCard(
-            title = "Step Count",
-            icon = Icons.Default.DirectionsWalk,
-            value = stepCount,
-            onValueChange = { viewModel.updateStepCount(it) },
-            placeholder = "Enter steps",
-            keyboardType = KeyboardType.Number,
-            unit = "steps"
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Mood Selection
-        Text(
-            text = "How are you feeling today?",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Mood Grid
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
-            modifier = Modifier.height(160.dp),
-            contentPadding = PaddingValues(vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        // Health Metrics Section
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = CardSurface),
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
-            items(moods.size) { index ->
-                val (emoji, description) = moods[index]
-                MoodItem(
-                    emoji = emoji,
-                    description = description,
-                    isSelected = selectedMood == emoji,
-                    onSelect = { viewModel.updateMood(emoji) }
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Water Intake
+                CompactHealthInput(
+                    icon = Icons.Default.WaterDrop,
+                    iconTint = SkyBlue,
+                    title = "Water Intake",
+                    value = waterIntake,
+                    onValueChange = { viewModel.updateWaterIntake(it) },
+                    unit = "glasses",
+                    keyboardType = KeyboardType.Number
+                )
+                
+                HorizontalDivider(color = BorderColor.copy(alpha = 0.5f))
+                
+                // Sleep Hours
+                CompactHealthInput(
+                    icon = Icons.Default.Bedtime,
+                    iconTint = PrimaryOrange,
+                    title = "Sleep Hours",
+                    value = sleepHours,
+                    onValueChange = { viewModel.updateSleepHours(it) },
+                    unit = "hours",
+                    keyboardType = KeyboardType.Decimal
+                )
+                
+                HorizontalDivider(color = BorderColor.copy(alpha = 0.5f))
+                
+                // Step Count
+                CompactHealthInput(
+                    icon = Icons.Default.DirectionsWalk,
+                    iconTint = SoftGreen,
+                    title = "Step Count",
+                    value = stepCount,
+                    onValueChange = { viewModel.updateStepCount(it) },
+                    unit = "steps",
+                    keyboardType = KeyboardType.Number
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
-        // Weight Input
-        HealthInputCard(
-            title = "Weight",
-            icon = Icons.Default.FitnessCenter,
-            value = weight,
-            onValueChange = { viewModel.updateWeight(it) },
-            placeholder = "Enter weight",
-            keyboardType = KeyboardType.Decimal,
-            unit = "kg"
+        // Mood Selection Section
+        Text(
+            text = "How are you feeling?",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onBackground
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Mood Grid - Using regular Rows instead of LazyVerticalGrid
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // First row of moods
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                moods.take(4).forEach { (emoji, description) ->
+                    CompactMoodItem(
+                        emoji = emoji,
+                        description = description,
+                        isSelected = selectedMood == emoji,
+                        onSelect = { viewModel.updateMood(emoji) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+            // Second row of moods
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                moods.drop(4).forEach { (emoji, description) ->
+                    CompactMoodItem(
+                        emoji = emoji,
+                        description = description,
+                        isSelected = selectedMood == emoji,
+                        onSelect = { viewModel.updateMood(emoji) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Body & Fitness Section
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = CardSurface),
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Weight
+                CompactHealthInput(
+                    icon = Icons.Default.MonitorWeight,
+                    iconTint = CoralPink,
+                    title = "Weight",
+                    value = weight,
+                    onValueChange = { viewModel.updateWeight(it) },
+                    unit = "kg",
+                    keyboardType = KeyboardType.Decimal
+                )
+                
+                HorizontalDivider(color = BorderColor.copy(alpha = 0.5f))
+                
+                // Calories
+                CompactHealthInput(
+                    icon = Icons.Default.LocalFireDepartment,
+                    iconTint = PrimaryOrange,
+                    title = "Calories",
+                    value = calories,
+                    onValueChange = { viewModel.updateCalories(it) },
+                    unit = "kcal",
+                    keyboardType = KeyboardType.Number
+                )
+                
+                HorizontalDivider(color = BorderColor.copy(alpha = 0.5f))
+                
+                // Exercise Minutes
+                CompactHealthInput(
+                    icon = Icons.Default.FitnessCenter,
+                    iconTint = MintGreen,
+                    title = "Exercise",
+                    value = exerciseMinutes,
+                    onValueChange = { viewModel.updateExerciseMinutes(it) },
+                    unit = "mins",
+                    keyboardType = KeyboardType.Number
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
 
         // Save Button
         Button(
             onClick = { viewModel.saveEntry() },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp),
+                .height(56.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color.Black
+                containerColor = PrimaryOrange
             ),
-            shape = RoundedCornerShape(10.dp),
+            shape = RoundedCornerShape(16.dp),
             enabled = uiState !is UiState.Loading
         ) {
             if (uiState is UiState.Loading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(24.dp),
-                    color = Color.White
+                    color = DeepBlack
                 )
             } else {
                 Text(
-                    text = "Save Entry",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color.White
+                    text = if (isEditing) "Update Entry" else "Save Entry",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = DeepBlack
                 )
             }
         }
-
-        Spacer(modifier = Modifier.height(20.dp))
     }
 }
 
 @Composable
-fun HealthInputCard(
-    title: String,
+fun CompactHealthInput(
     icon: ImageVector,
+    iconTint: Color,
+    title: String,
     value: String,
     onValueChange: (String) -> Unit,
-    placeholder: String,
-    keyboardType: KeyboardType,
-    unit: String
+    unit: String,
+    keyboardType: KeyboardType
 ) {
-    Card(
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(10.dp)
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+        // Icon with colored background
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(iconTint.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 8.dp)
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = title,
-                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = title,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-
-            OutlinedTextField(
-                value = value,
-                onValueChange = onValueChange,
-                placeholder = { Text(placeholder) },
-                keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                ),
-                suffix = {
-                    Text(
-                        text = unit,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                }
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = iconTint,
+                modifier = Modifier.size(20.dp)
             )
         }
+        
+        Spacer(modifier = Modifier.width(12.dp))
+        
+        // Title
+        Text(
+            text = title,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
+        )
+        
+        // Input field
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = { Text("0", color = TextSecondary) },
+            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            modifier = Modifier.width(100.dp),
+            textStyle = LocalTextStyle.current.copy(
+                textAlign = TextAlign.End,
+                fontWeight = FontWeight.Medium
+            ),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = PrimaryOrange,
+                unfocusedBorderColor = BorderColor,
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent
+            ),
+            shape = RoundedCornerShape(10.dp),
+            singleLine = true
+        )
+        
+        Spacer(modifier = Modifier.width(8.dp))
+        
+        // Unit
+        Text(
+            text = unit,
+            fontSize = 13.sp,
+            color = TextSecondary,
+            modifier = Modifier.width(50.dp)
+        )
     }
 }
 
 @Composable
-fun MoodItem(
+fun CompactMoodItem(
     emoji: String,
     description: String,
     isSelected: Boolean,
-    onSelect: () -> Unit
+    onSelect: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = modifier
             .aspectRatio(1f)
             .clickable(onClick = onSelect),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface
+            containerColor = if (isSelected) PrimaryOrange.copy(alpha = 0.2f) else CardSurface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(10.dp)
+        border = if (isSelected) androidx.compose.foundation.BorderStroke(2.dp, PrimaryOrange) else null,
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(8.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(4.dp)
         ) {
             Text(
                 text = emoji,
-                fontSize = 32.sp
+                fontSize = 24.sp
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = description,
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                textAlign = TextAlign.Center
+                fontSize = 10.sp,
+                color = if (isSelected) DeepBlack else TextSecondary,
+                textAlign = TextAlign.Center,
+                fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
             )
         }
     }

@@ -2,6 +2,10 @@ package com.example.healthloop.presentation.analysis
 
 import androidx.lifecycle.viewModelScope
 import com.example.healthloop.domain.usecase.GetHealthEntriesUseCase
+import com.example.healthloop.domain.usecase.GetRecentEntriesUseCase
+import com.example.healthloop.domain.usecase.GetTotalDaysLoggedUseCase
+import com.example.healthloop.domain.usecase.profile.GetUserGoalsUseCase
+import com.example.healthloop.domain.model.UserGoals
 import com.example.healthloop.presentation.mapper.toUiModels
 import com.example.healthloop.presentation.model.HealthEntryUiModel
 import com.example.healthloop.presentation.model.UiState
@@ -10,7 +14,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -18,7 +22,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AnalysisViewModel @Inject constructor(
-    private val getHealthEntriesUseCase: GetHealthEntriesUseCase
+    private val getHealthEntriesUseCase: GetHealthEntriesUseCase,
+    private val getUserGoalsUseCase: GetUserGoalsUseCase,
+    private val getTotalDaysLoggedUseCase: GetTotalDaysLoggedUseCase
 ) : BaseViewModel<AnalysisUiState>() {
 
     private val _entries = MutableStateFlow<List<HealthEntryUiModel>>(emptyList())
@@ -54,25 +60,69 @@ class AnalysisViewModel @Inject constructor(
         viewModelScope.launch {
             _state.value = UiState.Loading
             val (startDate, endDate) = getDateRange(_selectedTimeRange.value)
-            getHealthEntriesUseCase(startDate, endDate)
+            
+            try {
+                combine(
+                    getHealthEntriesUseCase(startDate, endDate),
+                    getUserGoalsUseCase(),
+                    getTotalDaysLoggedUseCase()
+                ) { entries, userGoals, totalDays ->
+                    val uiEntries = entries.toUiModels().sortedBy { it.date }
+                    _entries.value = uiEntries
+                    
+                    val goals = userGoals ?: UserGoals.default()
+                    
+                    // Calculate statistics for each metric
+                    val waterStats = calculateStatistics(uiEntries, HealthMetric.WATER)
+                    val sleepStats = calculateStatistics(uiEntries, HealthMetric.SLEEP)
+                    val stepsStats = calculateStatistics(uiEntries, HealthMetric.STEPS)
+                    val weightStats = calculateStatistics(uiEntries, HealthMetric.WEIGHT)
+                    val caloriesStats = calculateCaloriesStats(uiEntries)
+                    val exerciseStats = calculateExerciseStats(uiEntries)
+                    
+                    // Calculate mood distribution
+                    val moodDistribution = calculateMoodDistribution(uiEntries)
+                    
+                    // Calculate trends
+                    val waterTrend = calculateTrend(uiEntries.map { it.waterIntake.toFloat() })
+                    val sleepTrend = calculateTrend(uiEntries.map { it.sleepHours })
+                    val stepsTrend = calculateTrend(uiEntries.map { it.stepCount.toFloat() })
+                    val weightTrend = calculateTrend(uiEntries.map { it.weight })
+                    
+                    // Current metric stats
+                    val currentStats = calculateStatistics(uiEntries, _selectedMetric.value)
+                    
+                    AnalysisUiState(
+                        entries = uiEntries,
+                        metric = _selectedMetric.value,
+                        timeRange = _selectedTimeRange.value,
+                        average = currentStats.average,
+                        min = currentStats.min,
+                        max = currentStats.max,
+                        waterStats = waterStats,
+                        sleepStats = sleepStats,
+                        stepsStats = stepsStats,
+                        weightStats = weightStats,
+                        caloriesStats = caloriesStats,
+                        exerciseStats = exerciseStats,
+                        userGoals = goals,
+                        totalDaysLogged = totalDays,
+                        moodDistribution = moodDistribution,
+                        waterTrend = waterTrend,
+                        sleepTrend = sleepTrend,
+                        stepsTrend = stepsTrend,
+                        weightTrend = weightTrend
+                    )
+                }
                 .catch { e ->
                     _state.value = UiState.Error(e.message ?: "Failed to load analysis data")
                 }
-                .collectLatest { entries ->
-                    val uiEntries = entries.toUiModels().sortedBy { it.date }
-                    _entries.value = uiEntries
-                    val stats = calculateStatistics(uiEntries, _selectedMetric.value)
-                    _state.value = UiState.Success(
-                        AnalysisUiState(
-                            entries = uiEntries,
-                            metric = _selectedMetric.value,
-                            timeRange = _selectedTimeRange.value,
-                            average = stats.average,
-                            min = stats.min,
-                            max = stats.max
-                        )
-                    )
+                .collect { state ->
+                    _state.value = UiState.Success(state)
                 }
+            } catch (e: Exception) {
+                _state.value = UiState.Error(e.message ?: "Failed to load analysis data")
+            }
         }
     }
 
@@ -98,13 +148,63 @@ class AnalysisViewModel @Inject constructor(
                 HealthMetric.STEPS -> entry.stepCount.toFloat()
                 HealthMetric.WEIGHT -> entry.weight
             }
+        }.filter { it > 0 }
+        
+        if (values.isEmpty()) {
+            return Statistics(0f, 0f, 0f)
         }
 
         return Statistics(
-            average = values.average().toFloat(),  // Convert Double to Float here
+            average = values.average().toFloat(),
             min = values.minOrNull() ?: 0f,
             max = values.maxOrNull() ?: 0f
         )
+    }
+    
+    private fun calculateCaloriesStats(entries: List<HealthEntryUiModel>): Statistics {
+        val values = entries.map { it.calories.toFloat() }.filter { it > 0 }
+        if (values.isEmpty()) return Statistics(0f, 0f, 0f)
+        return Statistics(
+            average = values.average().toFloat(),
+            min = values.minOrNull() ?: 0f,
+            max = values.maxOrNull() ?: 0f
+        )
+    }
+    
+    private fun calculateExerciseStats(entries: List<HealthEntryUiModel>): Statistics {
+        val values = entries.map { it.exerciseMinutes.toFloat() }.filter { it > 0 }
+        if (values.isEmpty()) return Statistics(0f, 0f, 0f)
+        return Statistics(
+            average = values.average().toFloat(),
+            min = values.minOrNull() ?: 0f,
+            max = values.maxOrNull() ?: 0f
+        )
+    }
+    
+    private fun calculateMoodDistribution(entries: List<HealthEntryUiModel>): Map<String, Int> {
+        return entries
+            .filter { it.mood.isNotBlank() }
+            .groupingBy { it.mood }
+            .eachCount()
+    }
+    
+    private fun calculateTrend(values: List<Float>): TrendDirection {
+        if (values.size < 2) return TrendDirection.STABLE
+        
+        val validValues = values.filter { it > 0 }
+        if (validValues.size < 2) return TrendDirection.STABLE
+        
+        val firstHalf = validValues.take(validValues.size / 2).average()
+        val secondHalf = validValues.takeLast(validValues.size / 2).average()
+        
+        val difference = secondHalf - firstHalf
+        val threshold = firstHalf * 0.05 // 5% threshold
+        
+        return when {
+            difference > threshold -> TrendDirection.UP
+            difference < -threshold -> TrendDirection.DOWN
+            else -> TrendDirection.STABLE
+        }
     }
 }
 
@@ -120,6 +220,10 @@ enum class TimeRange {
     MONTH
 }
 
+enum class TrendDirection {
+    UP, DOWN, STABLE
+}
+
 data class Statistics(
     val average: Float,
     val min: Float,
@@ -132,5 +236,18 @@ data class AnalysisUiState(
     val timeRange: TimeRange = TimeRange.WEEK,
     val average: Float = 0f,
     val min: Float = 0f,
-    val max: Float = 0f
+    val max: Float = 0f,
+    val waterStats: Statistics = Statistics(0f, 0f, 0f),
+    val sleepStats: Statistics = Statistics(0f, 0f, 0f),
+    val stepsStats: Statistics = Statistics(0f, 0f, 0f),
+    val weightStats: Statistics = Statistics(0f, 0f, 0f),
+    val caloriesStats: Statistics = Statistics(0f, 0f, 0f),
+    val exerciseStats: Statistics = Statistics(0f, 0f, 0f),
+    val userGoals: UserGoals = UserGoals.default(),
+    val totalDaysLogged: Int = 0,
+    val moodDistribution: Map<String, Int> = emptyMap(),
+    val waterTrend: TrendDirection = TrendDirection.STABLE,
+    val sleepTrend: TrendDirection = TrendDirection.STABLE,
+    val stepsTrend: TrendDirection = TrendDirection.STABLE,
+    val weightTrend: TrendDirection = TrendDirection.STABLE
 )

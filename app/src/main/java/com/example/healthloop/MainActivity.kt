@@ -15,11 +15,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.example.healthloop.presentation.splash.SplashScreen
+import com.example.healthloop.presentation.starter.StarterScreen
 import com.example.healthloop.presentation.navigation.MainScreenWithBottomNav
 import com.example.healthloop.ui.theme.HealthLoopTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import androidx.compose.runtime.saveable.rememberSaveable
+
+enum class AppScreen {
+    SPLASH,
+    STARTER,
+    MAIN
+}
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -46,11 +53,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             var darkTheme by rememberSaveable { mutableStateOf(false) }
             HealthLoopTheme(darkTheme = darkTheme) {
-                var showSplash by remember { mutableStateOf(true) }
+                var currentScreen by remember { mutableStateOf(AppScreen.SPLASH) }
 
+                // Splash screen timer
                 LaunchedEffect(Unit) {
                     delay(SPLASH_DELAY)
-                    showSplash = false
+                    currentScreen = AppScreen.STARTER
                 }
 
                 Surface(
@@ -59,10 +67,12 @@ class MainActivity : ComponentActivity() {
                         .systemBarsPadding(),
                     color = Color.Transparent
                 ) {
-                    if (showSplash) {
-                        SplashScreen()
-                    } else {
-                        MainScreenWithBottomNav(
+                    when (currentScreen) {
+                        AppScreen.SPLASH -> SplashScreen()
+                        AppScreen.STARTER -> StarterScreen(
+                            onGetStarted = { currentScreen = AppScreen.MAIN }
+                        )
+                        AppScreen.MAIN -> MainScreenWithBottomNav(
                             darkTheme = darkTheme,
                             onToggleDarkTheme = { darkTheme = it }
                         )
