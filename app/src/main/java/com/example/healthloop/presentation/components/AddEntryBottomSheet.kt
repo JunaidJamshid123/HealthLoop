@@ -157,7 +157,7 @@ fun AddEntryBottomSheet(
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         EntryField(
-                            icon = R.drawable.water,
+                            icon = R.drawable.waterr,
                             iconTint = null,
                             title = "Water Intake",
                             value = waterIntake,
@@ -168,7 +168,7 @@ fun AddEntryBottomSheet(
                         )
 
                         EntryField(
-                            icon = R.drawable.sleeping,
+                            icon = R.drawable.sleepingg,
                             iconTint = null,
                             title = "Sleep Hours",
                             value = sleepHours,
@@ -179,7 +179,7 @@ fun AddEntryBottomSheet(
                         )
 
                         EntryField(
-                            icon = R.drawable.walk,
+                            icon = R.drawable.walkk,
                             iconTint = null,
                             title = "Step Count",
                             value = stepCount,
@@ -218,7 +218,7 @@ fun AddEntryBottomSheet(
                         )
 
                         EntryField(
-                            icon = R.drawable.calaroies,
+                            icon = R.drawable.calaroiess,
                             iconTint = null,
                             title = "Calories",
                             value = calories,
@@ -229,7 +229,7 @@ fun AddEntryBottomSheet(
                         )
 
                         EntryField(
-                            icon = R.drawable.excercise,
+                            icon = R.drawable.excercisee,
                             iconTint = null,
                             title = "Exercise",
                             value = exerciseMinutes,

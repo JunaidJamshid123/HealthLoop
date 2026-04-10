@@ -152,7 +152,7 @@ fun SplashScreen() {
 
             // Subtitle with accent color
             Text(
-                text = "Your Health, Your Journey",
+                text = "Track Your Health, Transform Your Life",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
                 color = TextSecondary,

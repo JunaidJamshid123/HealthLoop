@@ -314,9 +314,9 @@ fun PeriodChip(
 @Composable
 fun MetricSelector(selectedMetric: HealthMetric, onMetricSelected: (HealthMetric) -> Unit) {
     val metrics = listOf(
-        Triple(HealthMetric.WATER, "Water", R.drawable.water),
-        Triple(HealthMetric.SLEEP, "Sleep", R.drawable.sleeping),
-        Triple(HealthMetric.STEPS, "Steps", R.drawable.walk),
+        Triple(HealthMetric.WATER, "Water", R.drawable.waterr),
+        Triple(HealthMetric.SLEEP, "Sleep", R.drawable.sleepingg),
+        Triple(HealthMetric.STEPS, "Steps", R.drawable.walkk),
         Triple(HealthMetric.WEIGHT, "Weight", R.drawable.weight)
     )
     Row(
@@ -393,7 +393,7 @@ fun SummaryStatsSection(stats: AnalysisUiState) {
                     unit = "avg/day",
                     min = stats.waterStats.min,
                     max = stats.waterStats.max,
-                    icon = R.drawable.water,
+                    icon = R.drawable.waterr,
                     trend = stats.waterTrend,
                     color = SkyBlue,
                     modifier = Modifier.weight(1f)
@@ -404,7 +404,7 @@ fun SummaryStatsSection(stats: AnalysisUiState) {
                     unit = "avg/night",
                     min = stats.sleepStats.min,
                     max = stats.sleepStats.max,
-                    icon = R.drawable.sleeping,
+                    icon = R.drawable.sleepingg,
                     trend = stats.sleepTrend,
                     color = SoftGreen,
                     modifier = Modifier.weight(1f)
@@ -417,7 +417,7 @@ fun SummaryStatsSection(stats: AnalysisUiState) {
                     unit = "avg/day",
                     min = stats.stepsStats.min,
                     max = stats.stepsStats.max,
-                    icon = R.drawable.walk,
+                    icon = R.drawable.walkk,
                     trend = stats.stepsTrend,
                     color = PrimaryOrange,
                     modifier = Modifier.weight(1f)

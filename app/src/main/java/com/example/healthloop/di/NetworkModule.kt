@@ -1,6 +1,6 @@
 package com.example.healthloop.di
 
-import com.example.healthloop.data.remote.GeminiApiService
+import com.example.healthloop.data.remote.OpenAIApiService
 import com.example.healthloop.data.repository.AIAssistantRepositoryImpl
 import com.example.healthloop.domain.repository.AIAssistantRepository
 import dagger.Module
@@ -18,7 +18,7 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    private const val BASE_URL = "https://generativelanguage.googleapis.com/"
+    private const val BASE_URL = "https://api.openai.com/"
 
     @Provides
     @Singleton
@@ -47,15 +47,15 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideGeminiApiService(retrofit: Retrofit): GeminiApiService {
-        return retrofit.create(GeminiApiService::class.java)
+    fun provideOpenAIApiService(retrofit: Retrofit): OpenAIApiService {
+        return retrofit.create(OpenAIApiService::class.java)
     }
 
     @Provides
     @Singleton
     fun provideAIAssistantRepository(
-        geminiApiService: GeminiApiService
+        openAIApiService: OpenAIApiService
     ): AIAssistantRepository {
-        return AIAssistantRepositoryImpl(geminiApiService)
+        return AIAssistantRepositoryImpl(openAIApiService)
     }
 }

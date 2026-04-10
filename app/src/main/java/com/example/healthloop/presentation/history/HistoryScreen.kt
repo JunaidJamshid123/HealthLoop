@@ -148,7 +148,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             QuickStatCard(
-                                icon = R.drawable.sleeping,
+                                icon = R.drawable.sleepingg,
                                 title = "Sleep Time",
                                 value = formatSleepTime(entry.sleepHours),
                                 backgroundColor = SoftGreen.copy(alpha = 0.2f),
@@ -214,14 +214,14 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             QuickStatCard(
-                                icon = R.drawable.walk,
+                                icon = R.drawable.walkk,
                                 title = "Steps",
                                 value = formatNumber(entry.stepCount),
                                 backgroundColor = SkyBlue.copy(alpha = 0.2f),
                                 modifier = Modifier.weight(1f)
                             )
                             QuickStatCard(
-                                icon = R.drawable.water,
+                                icon = R.drawable.waterr,
                                 title = "Water Intake",
                                 value = "${entry.waterIntake} glasses",
                                 backgroundColor = SkyBlue.copy(alpha = 0.15f),
@@ -724,7 +724,7 @@ private fun ExerciseCard(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Image(
-                        painter = painterResource(id = R.drawable.excercise),
+                        painter = painterResource(id = R.drawable.excercisee),
                         contentDescription = "Exercise",
                         modifier = Modifier.size(24.dp),
                         contentScale = ContentScale.Fit
@@ -854,7 +854,7 @@ private fun CaloriesCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
-                painter = painterResource(id = R.drawable.calaroies),
+                painter = painterResource(id = R.drawable.calaroiess),
                 contentDescription = "Calories",
                 modifier = Modifier.size(28.dp),
                 contentScale = ContentScale.Fit

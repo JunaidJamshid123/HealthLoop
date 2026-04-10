@@ -13,12 +13,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -34,16 +39,31 @@ import kotlinx.coroutines.delay
 fun StarterScreen(
     onGetStarted: () -> Unit
 ) {
+    val configuration = LocalConfiguration.current
+    val screenHeight = configuration.screenHeightDp.dp
+    val screenWidth = configuration.screenWidthDp.dp
+    val isCompact = screenHeight < 680.dp
+    val isTablet = screenWidth > 600.dp
+
+    // Responsive sizing
+    val horizontalPadding = if (isTablet) 48.dp else 24.dp
+    val imageWidthFraction = if (isTablet) 0.6f else 0.88f
+    val titleSize = if (isCompact) 24.sp else if (isTablet) 34.sp else 28.sp
+    val subtitleSize = if (isCompact) 13.sp else if (isTablet) 17.sp else 15.sp
+    val buttonHeight = if (isCompact) 50.dp else 56.dp
+    val iconBaseSize = if (isCompact) 40.dp else if (isTablet) 56.dp else 48.dp
+    val topPadding = if (isCompact) 24.dp else 48.dp
+    val bottomPadding = if (isCompact) 28.dp else 48.dp
+
     // Animation states
     var startAnimation by remember { mutableStateOf(false) }
 
-    // Image animation
     val imageAlpha by animateFloatAsState(
         targetValue = if (startAnimation) 1f else 0f,
         animationSpec = tween(800, easing = EaseOutCubic),
         label = "image_alpha"
     )
-    
+
     val imageScale by animateFloatAsState(
         targetValue = if (startAnimation) 1f else 0.8f,
         animationSpec = spring(
@@ -53,13 +73,12 @@ fun StarterScreen(
         label = "image_scale"
     )
 
-    // Text animations
     val titleAlpha by animateFloatAsState(
         targetValue = if (startAnimation) 1f else 0f,
         animationSpec = tween(800, delayMillis = 300),
         label = "title_alpha"
     )
-    
+
     val titleSlide by animateFloatAsState(
         targetValue = if (startAnimation) 0f else 30f,
         animationSpec = tween(800, delayMillis = 300, easing = EaseOutCubic),
@@ -72,29 +91,26 @@ fun StarterScreen(
         label = "subtitle_alpha"
     )
 
-    // Button animation
     val buttonAlpha by animateFloatAsState(
         targetValue = if (startAnimation) 1f else 0f,
         animationSpec = tween(800, delayMillis = 700),
         label = "button_alpha"
     )
-    
+
     val buttonSlide by animateFloatAsState(
         targetValue = if (startAnimation) 0f else 50f,
         animationSpec = tween(800, delayMillis = 700, easing = EaseOutCubic),
         label = "button_slide"
     )
 
-    // Icons animation
     val iconsAlpha by animateFloatAsState(
         targetValue = if (startAnimation) 1f else 0f,
         animationSpec = tween(1000, delayMillis = 400),
         label = "icons_alpha"
     )
 
-    // Floating animations for icons
     val infiniteTransition = rememberInfiniteTransition(label = "float")
-    
+
     val floatAnimation1 by infiniteTransition.animateFloat(
         initialValue = -6f,
         targetValue = 6f,
@@ -104,7 +120,7 @@ fun StarterScreen(
         ),
         label = "float_anim1"
     )
-    
+
     val floatAnimation2 by infiniteTransition.animateFloat(
         initialValue = 5f,
         targetValue = -5f,
@@ -114,7 +130,7 @@ fun StarterScreen(
         ),
         label = "float_anim2"
     )
-    
+
     val floatAnimation3 by infiniteTransition.animateFloat(
         initialValue = -4f,
         targetValue = 4f,
@@ -135,17 +151,28 @@ fun StarterScreen(
         label = "rotate_anim"
     )
 
+    // Subtle pulse for the glow
+    val glowPulse by infiniteTransition.animateFloat(
+        initialValue = 0.25f,
+        targetValue = 0.45f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(3500, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glow_pulse"
+    )
+
     LaunchedEffect(Unit) {
         delay(100)
         startAnimation = true
     }
 
-    // Background gradient
+    // Background gradient matching the warm palette
     val backgroundGradient = Brush.verticalGradient(
         colors = listOf(
-            SurfaceLight,
             WarmBeigeLight,
-            SurfaceLight
+            SurfaceLight,
+            WarmBeigeLight
         )
     )
 
@@ -153,71 +180,120 @@ fun StarterScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(backgroundGradient)
+            .systemBarsPadding()
     ) {
-        // Decorative circles in background
+        // Decorative blurred orb - top left
+        Box(
+            modifier = Modifier
+                .size(220.dp)
+                .offset(x = (-60).dp, y = 120.dp)
+                .alpha(0.18f)
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            SoftGreen.copy(alpha = 0.6f),
+                            Color.Transparent
+                        )
+                    ),
+                    shape = CircleShape
+                )
+                .blur(80.dp)
+        )
+
+        // Decorative blurred orb - top right
+        Box(
+            modifier = Modifier
+                .size(180.dp)
+                .align(Alignment.TopEnd)
+                .offset(x = 50.dp, y = 80.dp)
+                .alpha(0.15f)
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            PrimaryOrange.copy(alpha = 0.6f),
+                            Color.Transparent
+                        )
+                    ),
+                    shape = CircleShape
+                )
+                .blur(70.dp)
+        )
+
+        // Decorative blurred orb - bottom center
         Box(
             modifier = Modifier
                 .size(200.dp)
-                .offset(x = (-50).dp, y = 180.dp)
-                .alpha(0.25f)
+                .align(Alignment.BottomCenter)
+                .offset(y = 60.dp)
+                .alpha(0.12f)
                 .background(
-                    color = SoftGreen.copy(alpha = 0.5f),
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            SkyBlue.copy(alpha = 0.5f),
+                            Color.Transparent
+                        )
+                    ),
                     shape = CircleShape
                 )
                 .blur(60.dp)
-        )
-        
-        Box(
-            modifier = Modifier
-                .size(150.dp)
-                .align(Alignment.TopEnd)
-                .offset(x = 40.dp, y = 100.dp)
-                .alpha(0.2f)
-                .background(
-                    color = PrimaryOrange.copy(alpha = 0.5f),
-                    shape = CircleShape
-                )
-                .blur(50.dp)
         )
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 28.dp)
-                .padding(top = 50.dp, bottom = 50.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(horizontal = horizontalPadding)
+                .padding(top = topPadding, bottom = bottomPadding),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Main illustration with floating icons
+            // Main illustration area with floating icons
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                // Soft glow behind image
+                // Large warm glow behind the image to mask white background
                 Box(
                     modifier = Modifier
-                        .size(280.dp)
-                        .offset(y = floatAnimation1.dp)
-                        .alpha(0.3f)
+                        .fillMaxWidth(imageWidthFraction + 0.1f)
+                        .aspectRatio(0.9f)
+                        .alpha(glowPulse)
                         .background(
                             brush = Brush.radialGradient(
                                 colors = listOf(
-                                    PrimaryOrange.copy(alpha = 0.3f),
-                                    WarmBeige.copy(alpha = 0.15f),
+                                    WarmBeige.copy(alpha = 0.7f),
+                                    PrimaryOrangeLight.copy(alpha = 0.2f),
                                     Color.Transparent
                                 )
                             ),
                             shape = CircleShape
                         )
                 )
-                
-                // Main image
+
+                // Warm tinted background circle behind image to cover white
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(imageWidthFraction)
+                        .aspectRatio(1f)
+                        .clip(CircleShape)
+                        .background(
+                            brush = Brush.radialGradient(
+                                colors = listOf(
+                                    WarmBeigeLight,
+                                    WarmBeigeLight.copy(alpha = 0.95f),
+                                    SurfaceLight.copy(alpha = 0.8f)
+                                )
+                            )
+                        )
+                )
+
+                // Main image with color tinting to blend white areas
                 Image(
-                    painter = painterResource(id = R.drawable.starter2),
+                    painter = painterResource(id = R.drawable.starterr2),
                     contentDescription = "Meditation illustration",
                     modifier = Modifier
-                        .fillMaxWidth(0.85f)
+                        .fillMaxWidth(imageWidthFraction)
                         .aspectRatio(0.95f)
                         .graphicsLayer {
                             alpha = imageAlpha
@@ -225,111 +301,110 @@ fun StarterScreen(
                             scaleY = imageScale
                             translationY = floatAnimation1 * 0.3f
                         },
-                    contentScale = ContentScale.Fit
+                    contentScale = ContentScale.Fit,
+
                 )
-                
-                // Floating Health Icons around the image
-                // Water icon - Top Left
+
+                // Floating Health Icons
                 FloatingHealthIcon(
-                    iconRes = R.drawable.water,
-                    backgroundColor = SkyBlue.copy(alpha = 0.9f),
+                    iconText = "💧",
+                    backgroundColor = SkyBlue.copy(alpha = 0.85f),
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .offset(x = 20.dp, y = 60.dp)
+                        .offset(x = 12.dp, y = 50.dp)
                         .graphicsLayer {
                             alpha = iconsAlpha
                             translationY = floatAnimation1
                             rotationZ = rotateAnimation
                         },
-                    size = 52.dp
+                    size = (iconBaseSize.value * 1.08f).dp
                 )
-                
-                // Sleep icon - Top Right
+
                 FloatingHealthIcon(
-                    iconRes = R.drawable.sleeping,
-                    backgroundColor = SoftGreen.copy(alpha = 0.9f),
+                    iconText = "😴",
+                    backgroundColor = SoftGreenLight.copy(alpha = 0.85f),
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .offset(x = (-15).dp, y = 80.dp)
+                        .offset(x = (-8).dp, y = 70.dp)
                         .graphicsLayer {
                             alpha = iconsAlpha
                             translationY = floatAnimation2
                             rotationZ = -rotateAnimation
                         },
-                    size = 48.dp
+                    size = iconBaseSize
                 )
-                
-                // Steps/Walk icon - Middle Left
+
                 FloatingHealthIcon(
-                    iconRes = R.drawable.walk,
-                    backgroundColor = MintGreen.copy(alpha = 0.9f),
+                    iconText = "🚶",
+                    backgroundColor = MintGreen.copy(alpha = 0.85f),
                     modifier = Modifier
                         .align(Alignment.CenterStart)
-                        .offset(x = (-5).dp, y = 30.dp)
+                        .offset(x = (-8).dp, y = 24.dp)
                         .graphicsLayer {
                             alpha = iconsAlpha
                             translationY = floatAnimation3
                             rotationZ = rotateAnimation * 0.5f
                         },
-                    size = 46.dp
+                    size = (iconBaseSize.value * 0.92f).dp
                 )
-                
-                // Exercise icon - Middle Right
+
                 FloatingHealthIcon(
-                    iconRes = R.drawable.excercise,
-                    backgroundColor = CoralPink.copy(alpha = 0.9f),
+                    iconText = "🏋️",
+                    backgroundColor = CoralPink.copy(alpha = 0.85f),
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
-                        .offset(x = 5.dp, y = (-20).dp)
+                        .offset(x = 8.dp, y = (-24).dp)
                         .graphicsLayer {
                             alpha = iconsAlpha
                             translationY = floatAnimation1 * -1
                             rotationZ = -rotateAnimation * 0.5f
                         },
-                    size = 44.dp
+                    size = (iconBaseSize.value * 0.88f).dp
                 )
-                
-                // Calories icon - Bottom Left
+
                 FloatingHealthIcon(
-                    iconRes = R.drawable.calaroies,
-                    backgroundColor = PrimaryOrange.copy(alpha = 0.9f),
+                    iconText = "🔥",
+                    backgroundColor = PrimaryOrangeLight.copy(alpha = 0.85f),
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .offset(x = 35.dp, y = (-50).dp)
+                        .offset(x = 28.dp, y = (-44).dp)
                         .graphicsLayer {
                             alpha = iconsAlpha
                             translationY = floatAnimation2 * -1
                             rotationZ = rotateAnimation
                         },
-                    size = 42.dp
+                    size = (iconBaseSize.value * 0.85f).dp
                 )
-                
-                // Heart/Mood icon - Bottom Right
+
                 FloatingHealthIcon(
-                    iconRes = R.drawable.happy,
-                    backgroundColor = Color(0xFFFFE0B2).copy(alpha = 0.95f),
+                    iconText = "😊",
+                    backgroundColor = Color(0xFFFFE0B2).copy(alpha = 0.9f),
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .offset(x = (-30).dp, y = (-40).dp)
+                        .offset(x = (-24).dp, y = (-36).dp)
                         .graphicsLayer {
                             alpha = iconsAlpha
                             translationY = floatAnimation3 * -1
                             rotationZ = -rotateAnimation
                         },
-                    size = 44.dp
+                    size = (iconBaseSize.value * 0.88f).dp
                 )
             }
 
-            // Content section
+            Spacer(modifier = Modifier.height(if (isCompact) 8.dp else 20.dp))
+
+            // Bottom content section
             Column(
                 modifier = Modifier
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .then(
+                        if (isTablet) Modifier.fillMaxWidth(0.7f) else Modifier
+                    ),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Title
                 Text(
-                    text = "Balance Your Mind",
-                    fontSize = 28.sp,
+                    text = "Track Your Health",
+                    fontSize = titleSize,
                     fontWeight = FontWeight.Bold,
                     color = DeepBlack,
                     textAlign = TextAlign.Center,
@@ -339,14 +414,14 @@ fun StarterScreen(
                             translationY = titleSlide
                         }
                 )
-                
-                Spacer(modifier = Modifier.height(4.dp))
-                
+
+                Spacer(modifier = Modifier.height(2.dp))
+
                 Text(
-                    text = "& Body",
-                    fontSize = 28.sp,
+                    text = "Transform Your Life",
+                    fontSize = titleSize,
                     fontWeight = FontWeight.Bold,
-                    color = PrimaryOrange,
+                    color = PrimaryOrangeDark,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .graphicsLayer {
@@ -355,49 +430,73 @@ fun StarterScreen(
                         }
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(if (isCompact) 10.dp else 16.dp))
 
-                // Subtitle
                 Text(
                     text = "Track your mood, sleep, and daily habits.\nStart your wellness journey today.",
-                    fontSize = 15.sp,
+                    fontSize = subtitleSize,
                     fontWeight = FontWeight.Normal,
                     color = TextSecondary,
                     textAlign = TextAlign.Center,
-                    lineHeight = 24.sp,
+                    lineHeight = (subtitleSize.value * 1.6f).sp,
                     modifier = Modifier
                         .alpha(subtitleAlpha)
-                        .padding(horizontal = 16.dp)
+                        .padding(horizontal = 8.dp)
                 )
 
-                Spacer(modifier = Modifier.height(36.dp))
+                Spacer(modifier = Modifier.height(if (isCompact) 20.dp else 32.dp))
 
-                // Get Started Button
+                // Get Started Button with gradient
                 Button(
                     onClick = onGetStarted,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp)
+                        .height(buttonHeight)
                         .graphicsLayer {
                             alpha = buttonAlpha
                             translationY = buttonSlide
-                        },
+                        }
+                        .shadow(
+                            elevation = 12.dp,
+                            shape = RoundedCornerShape(28.dp),
+                            ambientColor = PrimaryOrange.copy(alpha = 0.3f),
+                            spotColor = PrimaryOrange.copy(alpha = 0.25f)
+                        ),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = PrimaryOrange
+                        containerColor = Color.Transparent
                     ),
                     shape = RoundedCornerShape(28.dp),
+                    contentPadding = PaddingValues(0.dp),
                     elevation = ButtonDefaults.buttonElevation(
                         defaultElevation = 0.dp,
-                        pressedElevation = 2.dp
+                        pressedElevation = 4.dp
                     )
                 ) {
-                    Text(
-                        text = "Get Started",
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = DeepBlack
-                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(
+                                        PrimaryOrange,
+                                        PrimaryOrangeLight,
+                                        PrimaryOrange
+                                    )
+                                ),
+                                shape = RoundedCornerShape(28.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Get Started",
+                            fontSize = if (isCompact) 15.sp else 17.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = DeepBlack
+                        )
+                    }
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
@@ -405,7 +504,7 @@ fun StarterScreen(
 
 @Composable
 private fun FloatingHealthIcon(
-    iconRes: Int,
+    iconText: String,
     backgroundColor: Color,
     modifier: Modifier = Modifier,
     size: Dp = 48.dp
@@ -414,19 +513,26 @@ private fun FloatingHealthIcon(
         modifier = modifier
             .size(size)
             .shadow(
-                elevation = 8.dp,
+                elevation = 12.dp,
                 shape = CircleShape,
-                ambientColor = backgroundColor.copy(alpha = 0.3f),
-                spotColor = backgroundColor.copy(alpha = 0.2f)
+                ambientColor = backgroundColor.copy(alpha = 0.4f),
+                spotColor = backgroundColor.copy(alpha = 0.3f)
             )
-            .background(backgroundColor, CircleShape),
+            .background(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        backgroundColor,
+                        backgroundColor.copy(alpha = 0.8f)
+                    )
+                ),
+                shape = CircleShape
+            ),
         contentAlignment = Alignment.Center
     ) {
-        Image(
-            painter = painterResource(id = iconRes),
-            contentDescription = null,
-            modifier = Modifier.size(size * 0.55f),
-            contentScale = ContentScale.Fit
+        Text(
+            text = iconText,
+            fontSize = (size.value * 0.45f).sp,
+            textAlign = TextAlign.Center
         )
     }
 }

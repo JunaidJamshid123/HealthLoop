@@ -137,9 +137,9 @@ class InsightsViewModel @Inject constructor(
         // Calculate score change (compare first half vs second half)
         val scoreChange = calculateScoreChange(entries, goals)
 
-        // Weekly trend data (use health scores for each day)
-        val weeklyTrendData = calculateWeeklyTrend(entries, goals)
-        val weeklyLabels = getWeeklyLabels(entries)
+        // Trend data based on selected period
+        val weeklyTrendData = calculateTrendData(entries, goals, _selectedPeriod.value)
+        val weeklyLabels = getTrendLabels(_selectedPeriod.value)
 
         // Mood distribution
         val moodDistribution = entries
@@ -240,47 +240,84 @@ class InsightsViewModel @Inject constructor(
         return secondScore - firstScore
     }
 
-    private fun calculateWeeklyTrend(entries: List<HealthEntry>, goals: UserGoals): List<Float> {
-        if (entries.isEmpty()) return listOf(0f, 0f, 0f, 0f, 0f, 0f, 0f)
+    private fun calculateTrendData(entries: List<HealthEntry>, goals: UserGoals, period: TimePeriod): List<Float> {
+        if (entries.isEmpty()) return when (period) {
+            TimePeriod.WEEK -> List(7) { 0f }
+            TimePeriod.MONTH -> List(4) { 0f }
+            TimePeriod.YEAR -> List(12) { 0f }
+        }
 
         val calendar = Calendar.getInstance()
-        val dayFormat = java.text.SimpleDateFormat("EEE", Locale.getDefault())
 
-        // Get last 7 days
-        return (6 downTo 0).map { daysAgo ->
-            calendar.time = Date()
-            calendar.add(Calendar.DAY_OF_YEAR, -daysAgo)
-            
-            val dayStart = calendar.clone() as Calendar
-            dayStart.set(Calendar.HOUR_OF_DAY, 0)
-            dayStart.set(Calendar.MINUTE, 0)
-            dayStart.set(Calendar.SECOND, 0)
-            
-            val dayEnd = calendar.clone() as Calendar
-            dayEnd.set(Calendar.HOUR_OF_DAY, 23)
-            dayEnd.set(Calendar.MINUTE, 59)
-            dayEnd.set(Calendar.SECOND, 59)
-
-            val dayEntry = entries.find { entry ->
-                entry.date.time in dayStart.timeInMillis..dayEnd.timeInMillis
+        return when (period) {
+            TimePeriod.WEEK -> {
+                (6 downTo 0).map { daysAgo ->
+                    calendar.time = Date()
+                    calendar.add(Calendar.DAY_OF_YEAR, -daysAgo)
+                    val dayStart = (calendar.clone() as Calendar).apply {
+                        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0)
+                    }
+                    val dayEnd = (calendar.clone() as Calendar).apply {
+                        set(Calendar.HOUR_OF_DAY, 23); set(Calendar.MINUTE, 59); set(Calendar.SECOND, 59)
+                    }
+                    val dayEntry = entries.find { it.date.time in dayStart.timeInMillis..dayEnd.timeInMillis }
+                    if (dayEntry != null) calculateHealthScore(listOf(dayEntry), goals).toFloat() else 0f
+                }
             }
-
-            if (dayEntry != null) {
-                calculateHealthScore(listOf(dayEntry), goals).toFloat()
-            } else {
-                0f
+            TimePeriod.MONTH -> {
+                (3 downTo 0).map { weeksAgo ->
+                    calendar.time = Date()
+                    calendar.add(Calendar.WEEK_OF_YEAR, -weeksAgo)
+                    val weekStart = (calendar.clone() as Calendar).apply {
+                        set(Calendar.DAY_OF_WEEK, firstDayOfWeek)
+                        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0)
+                    }
+                    val weekEnd = (weekStart.clone() as Calendar).apply {
+                        add(Calendar.DAY_OF_YEAR, 6)
+                        set(Calendar.HOUR_OF_DAY, 23); set(Calendar.MINUTE, 59); set(Calendar.SECOND, 59)
+                    }
+                    val weekEntries = entries.filter { it.date.time in weekStart.timeInMillis..weekEnd.timeInMillis }
+                    if (weekEntries.isNotEmpty()) calculateHealthScore(weekEntries, goals).toFloat() else 0f
+                }
+            }
+            TimePeriod.YEAR -> {
+                (11 downTo 0).map { monthsAgo ->
+                    calendar.time = Date()
+                    calendar.add(Calendar.MONTH, -monthsAgo)
+                    val month = calendar.get(Calendar.MONTH)
+                    val year = calendar.get(Calendar.YEAR)
+                    val monthEntries = entries.filter {
+                        val entryCal = Calendar.getInstance().apply { time = it.date }
+                        entryCal.get(Calendar.MONTH) == month && entryCal.get(Calendar.YEAR) == year
+                    }
+                    if (monthEntries.isNotEmpty()) calculateHealthScore(monthEntries, goals).toFloat() else 0f
+                }
             }
         }
     }
 
-    private fun getWeeklyLabels(entries: List<HealthEntry>): List<String> {
+    private fun getTrendLabels(period: TimePeriod): List<String> {
         val calendar = Calendar.getInstance()
-        val dayFormat = java.text.SimpleDateFormat("EEE", Locale.getDefault())
-
-        return (6 downTo 0).map { daysAgo ->
-            calendar.time = Date()
-            calendar.add(Calendar.DAY_OF_YEAR, -daysAgo)
-            dayFormat.format(calendar.time)
+        return when (period) {
+            TimePeriod.WEEK -> {
+                val dayFormat = java.text.SimpleDateFormat("EEE", Locale.getDefault())
+                (6 downTo 0).map { daysAgo ->
+                    calendar.time = Date()
+                    calendar.add(Calendar.DAY_OF_YEAR, -daysAgo)
+                    dayFormat.format(calendar.time)
+                }
+            }
+            TimePeriod.MONTH -> {
+                (3 downTo 0).map { weeksAgo -> "W${4 - weeksAgo}" }
+            }
+            TimePeriod.YEAR -> {
+                val monthFormat = java.text.SimpleDateFormat("MMM", Locale.getDefault())
+                (11 downTo 0).map { monthsAgo ->
+                    calendar.time = Date()
+                    calendar.add(Calendar.MONTH, -monthsAgo)
+                    monthFormat.format(calendar.time)
+                }
+            }
         }
     }
 
@@ -329,7 +366,7 @@ class InsightsViewModel @Inject constructor(
             val sleepGoalPercent = ((avgSleep / goals.sleepGoal) * 100).toInt()
             insights.add(
                 InsightData(
-                    icon = com.example.healthloop.R.drawable.sleeping,
+                    icon = com.example.healthloop.R.drawable.sleepingg,
                     text = if (sleepGoalPercent >= 90) 
                         "Great! You're averaging ${String.format("%.1f", avgSleep)}h sleep, meeting your goal"
                     else 
@@ -345,7 +382,7 @@ class InsightsViewModel @Inject constructor(
             val waterGoalPercent = ((avgWater / goals.waterGoal) * 100).toInt()
             insights.add(
                 InsightData(
-                    icon = com.example.healthloop.R.drawable.water,
+                    icon = com.example.healthloop.R.drawable.waterr,
                     text = if (waterGoalPercent >= 80)
                         "Well hydrated! Averaging ${avgWater.toInt()} glasses daily"
                     else
@@ -361,7 +398,7 @@ class InsightsViewModel @Inject constructor(
             val stepsGoalPercent = ((avgSteps / goals.stepsGoal) * 100).toInt()
             insights.add(
                 InsightData(
-                    icon = com.example.healthloop.R.drawable.walk,
+                    icon = com.example.healthloop.R.drawable.walkk,
                     text = if (stepsGoalPercent >= 80)
                         "Active! Averaging ${String.format("%,.0f", avgSteps)} steps daily"
                     else

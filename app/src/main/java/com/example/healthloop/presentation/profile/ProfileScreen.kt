@@ -44,6 +44,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.healthloop.R
 import com.example.healthloop.ui.theme.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -57,6 +59,7 @@ fun ProfileScreen(
     var showEditGoalsDialog by remember { mutableStateOf(false) }
     var showEditProfileDialog by remember { mutableStateOf(false) }
     var showImagePickerDialog by remember { mutableStateOf(false) }
+    var showExportDialog by remember { mutableStateOf(false) }
     
     // Image picker launcher
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -201,7 +204,8 @@ fun ProfileScreen(
                     BodyStatsSection(
                         weight = uiState.userProfile.weight,
                         height = uiState.userProfile.height,
-                        bmi = uiState.userProfile.bmi
+                        bmi = uiState.userProfile.bmi,
+                        onEditClick = { showEditProfileDialog = true }
                     )
                     
                     Spacer(modifier = Modifier.height(20.dp))
@@ -223,7 +227,9 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(20.dp))
                     
                     // Quick Actions
-                    QuickActionsSection()
+                    QuickActionsSection(
+                        onExportClick = { showExportDialog = true }
+                    )
                 }
             }
             
@@ -319,6 +325,158 @@ fun ProfileScreen(
                 showImagePickerDialog = false
             }
         )
+    }
+
+    // Export Format Dialog
+    if (showExportDialog) {
+        ExportFormatDialog(
+            onDismiss = { showExportDialog = false },
+            onExport = { format ->
+                viewModel.onEvent(ProfileEvent.ExportData(context, format))
+                showExportDialog = false
+            }
+        )
+    }
+}
+
+// ==================== EXPORT FORMAT DIALOG ====================
+
+@Composable
+private fun ExportFormatDialog(
+    onDismiss: () -> Unit,
+    onExport: (String) -> Unit
+) {
+    var selectedFormat by remember { mutableStateOf("csv") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color.White,
+        shape = RoundedCornerShape(24.dp),
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Outlined.FileDownload,
+                    contentDescription = null,
+                    tint = PrimaryOrange,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    "Export Health Data",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = DeepBlack
+                )
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    "Choose export format:",
+                    fontSize = 14.sp,
+                    color = TextSecondary
+                )
+                ExportFormatOption(
+                    icon = Icons.Outlined.TableChart,
+                    title = "CSV (.csv)",
+                    subtitle = "Spreadsheet-compatible format",
+                    selected = selectedFormat == "csv",
+                    onClick = { selectedFormat = "csv" }
+                )
+                ExportFormatOption(
+                    icon = Icons.Outlined.PictureAsPdf,
+                    title = "PDF (.pdf)",
+                    subtitle = "Formatted document with tables",
+                    selected = selectedFormat == "pdf",
+                    onClick = { selectedFormat = "pdf" }
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onExport(selectedFormat) },
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(
+                    Icons.Outlined.FileDownload,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Export", fontWeight = FontWeight.SemiBold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = TextSecondary)
+            }
+        }
+    )
+}
+
+@Composable
+private fun ExportFormatOption(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val borderColor by animateColorAsState(
+        if (selected) PrimaryOrange else Color(0xFFE8E8E8),
+        label = "border"
+    )
+    val bgColor by animateColorAsState(
+        if (selected) PrimaryOrange.copy(alpha = 0.08f) else Color.White,
+        label = "bg"
+    )
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .border(1.5.dp, borderColor, RoundedCornerShape(14.dp)),
+        colors = CardDefaults.cardColors(containerColor = bgColor),
+        shape = RoundedCornerShape(14.dp),
+        elevation = CardDefaults.cardElevation(0.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(
+                        if (selected) PrimaryOrange.copy(alpha = 0.15f) else WarmBeige,
+                        RoundedCornerShape(10.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = if (selected) PrimaryOrange else DeepBlack,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = DeepBlack)
+                Text(subtitle, fontSize = 11.sp, color = TextSecondary)
+            }
+            RadioButton(
+                selected = selected,
+                onClick = onClick,
+                colors = RadioButtonDefaults.colors(
+                    selectedColor = PrimaryOrange,
+                    unselectedColor = Color(0xFFCCCCCC)
+                )
+            )
+        }
     }
 }
 
@@ -781,21 +939,21 @@ private fun GoalsSection(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     GoalItem(
-                        icon = R.drawable.water,
+                        icon = R.drawable.waterr,
                         label = "Water",
                         value = "$waterGoal glasses",
                         progress = 0.75f,
                         color = SkyBlue
                     )
                     GoalItem(
-                        icon = R.drawable.walk,
+                        icon = R.drawable.walkk,
                         label = "Steps",
                         value = "${stepsGoal / 1000}K steps",
                         progress = 0.65f,
                         color = MintGreen
                     )
                     GoalItem(
-                        icon = R.drawable.excercise,
+                        icon = R.drawable.excercisee,
                         label = "Exercise",
                         value = "$exerciseGoal min",
                         progress = 0.80f,
@@ -807,14 +965,14 @@ private fun GoalsSection(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     GoalItem(
-                        icon = R.drawable.sleeping,
+                        icon = R.drawable.sleepingg,
                         label = "Sleep",
                         value = "${sleepGoal.toInt()} hours",
                         progress = 0.90f,
                         color = SoftGreen
                     )
                     GoalItem(
-                        icon = R.drawable.calaroies,
+                        icon = R.drawable.calaroiess,
                         label = "Calories",
                         value = "$caloriesGoal kcal",
                         progress = 0.55f,
@@ -902,7 +1060,8 @@ private fun GoalItem(
 private fun BodyStatsSection(
     weight: Float,
     height: Int,
-    bmi: Float
+    bmi: Float,
+    onEditClick: () -> Unit = {}
 ) {
     val bmiCategory = when {
         bmi == 0f -> "Not Set" to TextSecondary
@@ -915,6 +1074,7 @@ private fun BodyStatsSection(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable { onEditClick() }
             .shadow(
                 elevation = 6.dp,
                 shape = RoundedCornerShape(20.dp),
@@ -943,6 +1103,13 @@ private fun BodyStatsSection(
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = DeepBlack
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Icon(
+                    imageVector = Icons.Outlined.Edit,
+                    contentDescription = "Edit Body Stats",
+                    tint = TextSecondary,
+                    modifier = Modifier.size(18.dp)
                 )
             }
             
@@ -1214,7 +1381,7 @@ private fun SettingsDivider() {
 
 // ==================== QUICK ACTIONS ====================
 @Composable
-private fun QuickActionsSection() {
+private fun QuickActionsSection(onExportClick: () -> Unit = {}) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -1254,7 +1421,8 @@ private fun QuickActionsSection() {
             QuickActionItem(
                 icon = Icons.Outlined.FileDownload,
                 title = "Export Data",
-                subtitle = "Download your health data"
+                subtitle = "Download your health data",
+                onClick = onExportClick
             )
             
             SettingsDivider()
@@ -1288,12 +1456,13 @@ private fun QuickActionsSection() {
 private fun QuickActionItem(
     icon: ImageVector,
     title: String,
-    subtitle: String
+    subtitle: String,
+    onClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { }
+            .clickable { onClick() }
             .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -1385,31 +1554,31 @@ private fun EditGoalsDialog(
                     value = editWater,
                     onValueChange = { editWater = it },
                     label = "Water (glasses)",
-                    icon = R.drawable.water
+                    icon = R.drawable.waterr
                 )
                 GoalTextField(
                     value = editSleep,
                     onValueChange = { editSleep = it },
                     label = "Sleep (hours)",
-                    icon = R.drawable.sleeping
+                    icon = R.drawable.sleepingg
                 )
                 GoalTextField(
                     value = editSteps,
                     onValueChange = { editSteps = it },
                     label = "Steps",
-                    icon = R.drawable.walk
+                    icon = R.drawable.walkk
                 )
                 GoalTextField(
                     value = editCalories,
                     onValueChange = { editCalories = it },
                     label = "Calories (kcal)",
-                    icon = R.drawable.calaroies
+                    icon = R.drawable.calaroiess
                 )
                 GoalTextField(
                     value = editExercise,
                     onValueChange = { editExercise = it },
                     label = "Exercise (minutes)",
-                    icon = R.drawable.excercise
+                    icon = R.drawable.excercisee
                 )
                 GoalTextField(
                     value = editWeight,
@@ -1607,19 +1776,22 @@ private fun EditProfileDialog(
                     value = editAge,
                     onValueChange = { editAge = it },
                     label = "Age",
-                    icon = Icons.Outlined.Cake
+                    icon = Icons.Outlined.Cake,
+                    keyboardType = KeyboardType.Number
                 )
                 ProfileTextField(
                     value = editWeight,
                     onValueChange = { editWeight = it },
                     label = "Weight (kg)",
-                    icon = Icons.Outlined.MonitorWeight
+                    icon = Icons.Outlined.MonitorWeight,
+                    keyboardType = KeyboardType.Decimal
                 )
                 ProfileTextField(
                     value = editHeight,
                     onValueChange = { editHeight = it },
                     label = "Height (cm)",
-                    icon = Icons.Outlined.Height
+                    icon = Icons.Outlined.Height,
+                    keyboardType = KeyboardType.Number
                 )
             }
         },
@@ -1653,7 +1825,8 @@ private fun ProfileTextField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
-    icon: ImageVector
+    icon: ImageVector,
+    keyboardType: KeyboardType = KeyboardType.Text
 ) {
     OutlinedTextField(
         value = value,
@@ -1675,6 +1848,7 @@ private fun ProfileTextField(
             focusedContainerColor = Color.Transparent,
             unfocusedContainerColor = Color.Transparent
         ),
-        singleLine = true
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType)
     )
 }

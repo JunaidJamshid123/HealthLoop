@@ -1,10 +1,9 @@
 package com.example.healthloop.data.repository
 
 import com.example.healthloop.BuildConfig
-import com.example.healthloop.data.remote.Content
-import com.example.healthloop.data.remote.GeminiApiService
-import com.example.healthloop.data.remote.GeminiRequest
-import com.example.healthloop.data.remote.Part
+import com.example.healthloop.data.remote.OpenAIApiService
+import com.example.healthloop.data.remote.OpenAIChatRequest
+import com.example.healthloop.data.remote.OpenAIMessage
 import com.example.healthloop.domain.model.HealthEntry
 import com.example.healthloop.domain.model.UserGoals
 import com.example.healthloop.domain.model.UserProfile
@@ -14,13 +13,12 @@ import java.util.Locale
 import javax.inject.Inject
 
 class AIAssistantRepositoryImpl @Inject constructor(
-    private val geminiApiService: GeminiApiService
+    private val openAIApiService: OpenAIApiService
 ) : AIAssistantRepository {
 
     companion object {
-        // API key is loaded securely from local.properties via BuildConfig
-        private val API_KEY = BuildConfig.GEMINI_API_KEY
-        private const val MODEL = "gemini-2.0-flash"
+        private val API_KEY = BuildConfig.OPENAI_API_KEY
+        private const val MODEL = "gpt-4o-mini"
     }
 
     override suspend fun getAIResponse(
@@ -32,39 +30,35 @@ class AIAssistantRepositoryImpl @Inject constructor(
     ): Result<String> {
         return try {
             val systemPrompt = buildSystemPrompt(userProfile, userGoals, recentEntries)
-            val conversationContext = buildConversationContext(conversationHistory)
-            
-            val fullPrompt = """
-$systemPrompt
 
-$conversationContext
+            val messages = mutableListOf<OpenAIMessage>()
 
-User's Current Question: $userMessage
+            // System message
+            messages.add(OpenAIMessage(role = "system", content = systemPrompt))
 
-Please provide a helpful, personalized response based on the user's health data and question. Be conversational, supportive, and include specific recommendations based on their actual data when relevant. Use emojis sparingly to make the response friendly. Format important information clearly.
-            """.trimIndent()
+            // Conversation history
+            conversationHistory.takeLast(5).forEach { (userMsg, aiMsg) ->
+                messages.add(OpenAIMessage(role = "user", content = userMsg))
+                messages.add(OpenAIMessage(role = "assistant", content = aiMsg))
+            }
 
-            val request = GeminiRequest(
-                contents = listOf(
-                    Content(
-                        parts = listOf(Part(text = fullPrompt)),
-                        role = "user"
-                    )
-                )
+            // Current user message
+            messages.add(OpenAIMessage(role = "user", content = userMessage))
+
+            val request = OpenAIChatRequest(
+                model = MODEL,
+                messages = messages
             )
 
-            val response = geminiApiService.generateContent(
-                model = MODEL,
-                apiKey = API_KEY,
+            val response = openAIApiService.createChatCompletion(
+                authorization = "Bearer $API_KEY",
                 request = request
             )
 
-            val aiResponse = response.candidates
+            val aiResponse = response.choices
                 ?.firstOrNull()
+                ?.message
                 ?.content
-                ?.parts
-                ?.firstOrNull()
-                ?.text
 
             if (aiResponse != null) {
                 Result.success(aiResponse)
@@ -185,22 +179,6 @@ $profileSection
 $goalsSection
 
 $entriesSection
-        """.trimIndent()
-    }
-
-    private fun buildConversationContext(conversationHistory: List<Pair<String, String>>): String {
-        if (conversationHistory.isEmpty()) return ""
-        
-        val recentHistory = conversationHistory.takeLast(5) // Keep last 5 exchanges for context
-        
-        return """
-## RECENT CONVERSATION CONTEXT:
-${recentHistory.joinToString("\n") { (userMsg, aiMsg) ->
-            """
-User: $userMsg
-Assistant: ${aiMsg.take(200)}${if (aiMsg.length > 200) "..." else ""}
-            """.trimIndent()
-        }}
         """.trimIndent()
     }
 }

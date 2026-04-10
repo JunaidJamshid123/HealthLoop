@@ -44,6 +44,20 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.healthloop.R
 import com.example.healthloop.presentation.model.UiState
 import com.example.healthloop.ui.theme.*
+import androidx.compose.ui.graphics.toArgb
+import com.patrykandpatrick.vico.compose.chart.Chart
+import com.patrykandpatrick.vico.compose.chart.line.lineChart
+import com.patrykandpatrick.vico.compose.axis.horizontal.rememberBottomAxis
+import com.patrykandpatrick.vico.compose.axis.vertical.rememberStartAxis
+import com.patrykandpatrick.vico.compose.style.ProvideChartStyle
+import com.patrykandpatrick.vico.compose.m3.style.m3ChartStyle
+import com.patrykandpatrick.vico.core.entry.entryModelOf
+import com.patrykandpatrick.vico.core.entry.FloatEntry
+import com.patrykandpatrick.vico.core.entry.entryOf
+import com.patrykandpatrick.vico.core.axis.AxisPosition
+import com.patrykandpatrick.vico.core.axis.formatter.AxisValueFormatter
+import com.patrykandpatrick.vico.core.chart.line.LineChart as VicoLineChart
+import com.patrykandpatrick.vico.compose.component.shape.shader.fromBrush
 import kotlinx.coroutines.delay
 
 @Composable
@@ -165,7 +179,12 @@ fun InsightsScreen(
         ) {
             WeeklyTrendsCard(
                 trendData = data.weeklyTrendData,
-                labels = data.weeklyLabels
+                labels = data.weeklyLabels,
+                periodLabel = when (selectedPeriod) {
+                    TimePeriod.WEEK -> "Weekly"
+                    TimePeriod.MONTH -> "Monthly"
+                    TimePeriod.YEAR -> "Yearly"
+                }
             )
         }
         
@@ -197,7 +216,7 @@ fun InsightsScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 QuickStatCard(
-                    icon = R.drawable.sleeping,
+                    icon = R.drawable.sleepingg,
                     title = "Avg Sleep",
                     value = if (data.avgSleep > 0) String.format("%.1f hrs", data.avgSleep) else "No Data",
                     backgroundColor = SoftGreen.copy(alpha = 0.4f),
@@ -205,7 +224,7 @@ fun InsightsScreen(
                     modifier = Modifier.weight(1f)
                 )
                 QuickStatCard(
-                    icon = R.drawable.walk,
+                    icon = R.drawable.walkk,
                     title = "Avg Steps",
                     value = if (data.avgSteps > 0) {
                         if (data.avgSteps >= 1000) String.format("%.1fK", data.avgSteps / 1000f)
@@ -393,14 +412,15 @@ private fun HealthScoreCard(
     }
 }
 
-// ==================== WEEKLY TRENDS CARD ====================
+// ==================== TRENDS CARD (VICO CHART) ====================
 @Composable
 private fun WeeklyTrendsCard(
     trendData: List<Float>,
-    labels: List<String>
+    labels: List<String>,
+    periodLabel: String = "Weekly"
 ) {
     val displayData = if (trendData.isEmpty() || trendData.all { it == 0f }) {
-        listOf(0f, 0f, 0f, 0f, 0f, 0f, 0f)
+        List(maxOf(labels.size, 7)) { 0f }
     } else {
         trendData
     }
@@ -409,7 +429,15 @@ private fun WeeklyTrendsCard(
     } else {
         labels
     }
-    
+
+    val chartEntryModel = remember(displayData) {
+        entryModelOf(displayData.mapIndexed { index, value -> entryOf(index.toFloat(), value) })
+    }
+
+    val bottomAxisValueFormatter = AxisValueFormatter<AxisPosition.Horizontal.Bottom> { value, _ ->
+        displayLabels.getOrElse(value.toInt()) { "" }
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = CardSurface),
@@ -421,110 +449,61 @@ private fun WeeklyTrendsCard(
                 .fillMaxWidth()
                 .padding(20.dp)
         ) {
-            Text(
-                text = "Weekly Trends",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = DeepBlack
-            )
-            
-            Spacer(modifier = Modifier.height(20.dp))
-            
-            // Line Chart with background
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(150.dp)
-                    .background(WarmBeigeLight, RoundedCornerShape(12.dp))
-                    .padding(12.dp)
-            ) {
-                LineChart(
-                    data = displayData,
-                    lineColor = PrimaryOrangeDark
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(14.dp))
-            
-            // Day labels
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                displayLabels.forEach { day ->
+                Text(
+                    text = "$periodLabel Trends",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = DeepBlack
+                )
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = WarmBeige
+                ) {
                     Text(
-                        text = day,
+                        text = "Health Score",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
-                        color = DeepBlack.copy(alpha = 0.6f)
+                        color = DeepBlack.copy(alpha = 0.6f),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                     )
                 }
             }
-        }
-    }
-}
 
-@Composable
-private fun LineChart(
-    data: List<Float>,
-    lineColor: Color
-) {
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        val maxValue = data.maxOrNull() ?: 100f
-        val minValue = (data.minOrNull() ?: 0f) - 10f
-        val range = maxValue - minValue
-        
-        val width = size.width
-        val height = size.height
-        val stepX = width / (data.size - 1)
-        
-        val points = data.mapIndexed { index, value ->
-            Offset(
-                x = index * stepX,
-                y = height - ((value - minValue) / range * height)
-            )
-        }
-        
-        // Draw fill gradient - stronger visibility
-        val fillPath = Path().apply {
-            moveTo(0f, height)
-            points.forEach { point ->
-                lineTo(point.x, point.y)
+            Spacer(modifier = Modifier.height(16.dp))
+
+            ProvideChartStyle(m3ChartStyle()) {
+                Chart(
+                    chart = lineChart(
+                        lines = listOf(
+                            VicoLineChart.LineSpec(
+                                lineColor = PrimaryOrangeDark.toArgb(),
+                                lineThicknessDp = 3f,
+                                lineBackgroundShader = com.patrykandpatrick.vico.core.component.shape.shader.DynamicShaders.fromBrush(
+                                    Brush.verticalGradient(
+                                        colors = listOf(
+                                            PrimaryOrange.copy(alpha = 0.4f),
+                                            PrimaryOrange.copy(alpha = 0.0f)
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    model = chartEntryModel,
+                    startAxis = rememberStartAxis(),
+                    bottomAxis = rememberBottomAxis(
+                        valueFormatter = bottomAxisValueFormatter
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                )
             }
-            lineTo(width, height)
-            close()
-        }
-        
-        drawPath(
-            path = fillPath,
-            brush = Brush.verticalGradient(
-                colors = listOf(lineColor.copy(alpha = 0.4f), lineColor.copy(alpha = 0.05f))
-            )
-        )
-        
-        // Draw line - thicker for better visibility
-        for (i in 0 until points.size - 1) {
-            drawLine(
-                color = lineColor,
-                start = points[i],
-                end = points[i + 1],
-                strokeWidth = 4.dp.toPx(),
-                cap = StrokeCap.Round
-            )
-        }
-        
-        // Draw points - larger for better visibility
-        points.forEach { point ->
-            drawCircle(
-                color = CardSurface,
-                radius = 7.dp.toPx(),
-                center = point
-            )
-            drawCircle(
-                color = lineColor,
-                radius = 5.dp.toPx(),
-                center = point
-            )
         }
     }
 }
@@ -723,7 +702,7 @@ private fun SleepAnalysisCard(sleepQuality: SleepQualityData) {
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
-                            painter = painterResource(id = R.drawable.sleeping),
+                            painter = painterResource(id = R.drawable.sleepingg),
                             contentDescription = null,
                             modifier = Modifier.size(20.dp)
                         )

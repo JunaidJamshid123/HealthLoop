@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -60,7 +61,8 @@ import java.util.Locale
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel(),
-    navController: NavController? = null
+    navController: NavController? = null,
+    onMenuClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var selectedTab by remember { mutableStateOf("Mood") }
@@ -122,6 +124,7 @@ fun DashboardScreen(
                     greeting = greeting,
                     userName = dashboardState.userName,
                     profilePictureBase64 = dashboardState.profilePictureBase64,
+                    onMenuClick = onMenuClick,
                     modifier = Modifier.padding(horizontal = 20.dp)
                 )
 
@@ -217,11 +220,11 @@ private fun BalanceTextSection(modifier: Modifier = Modifier) {
     ) {
         Text(
             text = buildAnnotatedString {
-                append("Balance Your ")
+                append("Track Your ")
                 withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                    append("Mind")
+                    append("Health")
                 }
-                append("\nand ")
+                append("\nTransform Your ")
                 withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
                     append("Life")
                 }
@@ -348,7 +351,7 @@ private fun TodaySummaryCard(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     SummaryItem(
-                        icon = R.drawable.water,
+                        icon = R.drawable.waterr,
                         title = "Water",
                         value = "${todayData.waterIntake}/${todayData.targetWater}",
                         unit = "glasses",
@@ -358,7 +361,7 @@ private fun TodaySummaryCard(
                         delayMillis = 0
                     )
                     SummaryItem(
-                        icon = R.drawable.sleeping,
+                        icon = R.drawable.sleepingg,
                         title = "Sleep",
                         value = String.format(Locale.US, "%.1f", todayData.sleepHours),
                         unit = "hours",
@@ -368,7 +371,7 @@ private fun TodaySummaryCard(
                         delayMillis = 100
                     )
                     SummaryItem(
-                        icon = R.drawable.walk,
+                        icon = R.drawable.walkk,
                         title = "Steps",
                         value = NumberFormat.getNumberInstance(Locale.US).format(todayData.stepCount),
                         unit = "steps",
@@ -396,7 +399,7 @@ private fun TodaySummaryCard(
                         delayMillis = 300
                     )
                     SummaryItem(
-                        icon = R.drawable.calaroies,
+                        icon = R.drawable.calaroiess,
                         title = "Calories",
                         value = NumberFormat.getNumberInstance(Locale.US).format(todayData.calories),
                         unit = "kcal",
@@ -406,7 +409,7 @@ private fun TodaySummaryCard(
                         delayMillis = 400
                     )
                     SummaryItem(
-                        icon = R.drawable.excercise,
+                        icon = R.drawable.excercisee,
                         title = "Exercise",
                         value = "${todayData.exerciseMinutes}",
                         unit = "mins",
@@ -550,7 +553,7 @@ private fun WeeklyStatsSection(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     WeeklyStatItem(
-                        icon = R.drawable.sleeping,
+                        icon = R.drawable.sleepingg,
                         title = "Sleep",
                         value = String.format(Locale.US, "%.1f", weeklyData.avgSleep),
                         unit = "hrs",
@@ -559,7 +562,7 @@ private fun WeeklyStatsSection(
                         modifier = Modifier.weight(1f)
                     )
                     WeeklyStatItem(
-                        icon = R.drawable.walk,
+                        icon = R.drawable.walkk,
                         title = "Steps",
                         value = "${weeklyData.totalSteps / 1000}K",
                         unit = "steps",
@@ -568,7 +571,7 @@ private fun WeeklyStatsSection(
                         modifier = Modifier.weight(1f)
                     )
                     WeeklyStatItem(
-                        icon = R.drawable.water,
+                        icon = R.drawable.waterr,
                         title = "Water",
                         value = String.format(Locale.US, "%.1f", weeklyData.avgWater),
                         unit = "glasses",
@@ -595,7 +598,7 @@ private fun WeeklyStatsSection(
                         modifier = Modifier.weight(1f)
                     )
                     WeeklyStatItem(
-                        icon = R.drawable.calaroies,
+                        icon = R.drawable.calaroiess,
                         title = "Calories",
                         value = "${weeklyData.avgCalories / 1000}.${(weeklyData.avgCalories % 1000) / 100}K",
                         unit = "avg",
@@ -604,7 +607,7 @@ private fun WeeklyStatsSection(
                         modifier = Modifier.weight(1f)
                     )
                     WeeklyStatItem(
-                        icon = R.drawable.excercise,
+                        icon = R.drawable.excercisee,
                         title = "Exercise",
                         value = String.format(Locale.US, "%.1f", weeklyData.totalExercise / 60f),
                         unit = "hrs",
@@ -1210,6 +1213,7 @@ private fun HomeHeader(
     greeting: String,
     userName: String = "User",
     profilePictureBase64: String? = null,
+    onMenuClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // Decode profile picture from Base64
@@ -1229,36 +1233,28 @@ private fun HomeHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Left side - Menu and Greeting
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.weight(1f)
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Profile Avatar
-            Box(
+            // Menu Button - Left Side
+            IconButton(
+                onClick = onMenuClick,
                 modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(WarmBeige)
+                    .size(44.dp)
+                    .background(
+                        color = WarmBeige.copy(alpha = 0.6f),
+                        shape = CircleShape
+                    )
             ) {
-                if (profileBitmap != null) {
-                    Image(
-                        bitmap = profileBitmap.asImageBitmap(),
-                        contentDescription = "Profile",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Image(
-                        painter = painterResource(id = R.drawable.user),
-                        contentDescription = "Profile",
-                        modifier = Modifier
-                            .size(28.dp)
-                            .align(Alignment.Center),
-                        contentScale = ContentScale.Fit
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Outlined.Menu,
+                    contentDescription = "Menu",
+                    tint = DeepBlack,
+                    modifier = Modifier.size(22.dp)
+                )
             }
-
+            
             Spacer(modifier = Modifier.width(12.dp))
 
             Column {
@@ -1286,26 +1282,35 @@ private fun HomeHeader(
                 }
             }
         }
-
-        // Notification Bell
-        IconButton(
-            onClick = { },
+        
+        // Right side - Profile Avatar
+        Box(
             modifier = Modifier
-                .size(44.dp)
-                .background(
-                    color = WarmBeige.copy(alpha = 0.6f),
-                    shape = CircleShape
-                )
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(WarmBeige)
         ) {
-            Icon(
-                imageVector = Icons.Outlined.Notifications,
-                contentDescription = "Notifications",
-                tint = DeepBlack,
-                modifier = Modifier.size(22.dp)
-            )
+            if (profileBitmap != null) {
+                Image(
+                    bitmap = profileBitmap.asImageBitmap(),
+                    contentDescription = "Profile",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Image(
+                    painter = painterResource(id = R.drawable.user),
+                    contentDescription = "Profile",
+                    modifier = Modifier
+                        .size(28.dp)
+                        .align(Alignment.Center),
+                    contentScale = ContentScale.Fit
+                )
+            }
         }
     }
 }
+     
 
 @Composable
 private fun TabChipsRow(
@@ -1314,13 +1319,13 @@ private fun TabChipsRow(
     modifier: Modifier = Modifier
 ) {
     val tabs = listOf(
-        "Mood" to R.drawable.happy,
-        "Water" to R.drawable.water,
-        "Sleep" to R.drawable.sleeping,
-        "Steps" to R.drawable.walk,
+        "Mood" to R.drawable.calmm,
+        "Water" to R.drawable.waterr,
+        "Sleep" to R.drawable.sleepingg,
+        "Steps" to R.drawable.walkk,
         "Weight" to R.drawable.weight,
-        "Calories" to R.drawable.calaroies,
-        "Exercise" to R.drawable.excercise
+        "Calories" to R.drawable.calaroiess,
+        "Exercise" to R.drawable.excercisee
     )
 
     LazyRow(
@@ -1366,8 +1371,9 @@ private fun MoodHistoryCard(
 ) {
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
-    val moodIconSize = if (screenWidth < 360.dp) 40.dp else 46.dp
-    val emojiSize = if (screenWidth < 360.dp) 24.dp else 28.dp
+    // Reduced size to fit 7 days
+    val moodIconSize = if (screenWidth < 360.dp) 36.dp else 40.dp
+    val emojiSize = if (screenWidth < 360.dp) 20.dp else 24.dp
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -1392,7 +1398,7 @@ private fun MoodHistoryCard(
                     color = DeepBlack
                 )
                 Text(
-                    text = "This week",
+                    text = "Last 7 days",
                     fontSize = 11.sp,
                     color = TextSecondary
                 )
@@ -1400,15 +1406,16 @@ private fun MoodHistoryCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Mood icons for each day - responsive
+            // Mood icons for each day - responsive - show all 7 days
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 val displayData = if (moodData.isNotEmpty()) moodData else listOf(
-                    "Mon" to "", "Tue" to "", "Wed" to "", "Thu" to "", "Fri" to ""
+                    "Mon" to "", "Tue" to "", "Wed" to "", "Thu" to "", 
+                    "Fri" to "", "Sat" to "", "Sun" to ""
                 )
-                displayData.take(5).forEach { (day, mood) ->
+                displayData.forEach { (day, mood) ->
                     val (moodIcon, backgroundColor) = getMoodIconAndColor(mood)
                     MoodDayItem(
                         day = day,
@@ -1427,14 +1434,14 @@ private fun MoodHistoryCard(
 @Composable
 private fun getMoodIconAndColor(mood: String): Pair<Int, Color> {
     if (mood.isBlank()) {
-        return R.drawable.confused to Color(0xFFE0E0E0) // Empty/no data
+        return R.drawable.smile to Color(0xFFE8F5E9) // Default normal/neutral mood - light green
     }
     
     val normalizedMood = mood.lowercase().trim()
     
     return when {
-        normalizedMood.contains("happy") || normalizedMood == "😊" -> 
-            R.drawable.happy to Color(0xFFC8E6C9) // Light Green
+       // normalizedMood.contains("happy") || normalizedMood == "😊" ->
+       //     R.drawable.happy to Color(0xFFC8E6C9) // Light Green
         normalizedMood.contains("sad") || normalizedMood == "😢" -> 
             R.drawable.sad to Color(0xFFFFE0B2) // Light Orange
         normalizedMood.contains("angry") || normalizedMood == "😠" -> 
@@ -1451,7 +1458,9 @@ private fun getMoodIconAndColor(mood: String): Pair<Int, Color> {
             R.drawable.grateful to Color(0xFFFFD54F) // Gold
         normalizedMood.contains("confused") || normalizedMood == "😕" -> 
             R.drawable.confused to Color(0xFFF8BBD0) // Light Pink
-        else -> R.drawable.confused to Color(0xFFE0E0E0) // Default Gray
+        normalizedMood.contains("normal") || normalizedMood.contains("neutral") -> 
+            R.drawable.smile to Color(0xFFE8F5E9) // Light Green for normal
+        else -> R.drawable.smile to Color(0xFFE8F5E9) // Default normal mood
     }
 }
 
