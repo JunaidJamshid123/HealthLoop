@@ -53,6 +53,24 @@ import com.example.healthloop.R
 import com.example.healthloop.presentation.model.TodayHealthDataUiModel
 import com.example.healthloop.presentation.model.UiState
 import com.example.healthloop.ui.theme.*
+import com.patrykandpatrick.vico.compose.axis.horizontal.rememberBottomAxis
+import com.patrykandpatrick.vico.compose.axis.vertical.rememberStartAxis
+import com.patrykandpatrick.vico.compose.chart.Chart
+import com.patrykandpatrick.vico.compose.chart.column.columnChart
+import com.patrykandpatrick.vico.compose.chart.line.lineChart
+import com.patrykandpatrick.vico.compose.component.shape.roundedCornerShape
+import com.patrykandpatrick.vico.compose.style.ProvideChartStyle
+import com.patrykandpatrick.vico.compose.m3.style.m3ChartStyle
+import com.patrykandpatrick.vico.core.axis.AxisPosition
+import com.patrykandpatrick.vico.core.axis.formatter.AxisValueFormatter
+import com.patrykandpatrick.vico.core.chart.line.LineChart as VicoLineChart
+import com.patrykandpatrick.vico.core.component.shape.LineComponent
+import com.patrykandpatrick.vico.core.component.shape.Shapes
+import com.patrykandpatrick.vico.core.entry.entryModelOf
+import com.patrykandpatrick.vico.core.entry.entryOf
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.toArgb
+import com.patrykandpatrick.vico.compose.component.shape.shader.fromBrush
 import kotlinx.coroutines.delay
 import java.text.NumberFormat
 import java.util.Calendar
@@ -718,25 +736,34 @@ private fun WaterHistoryCard(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Bar chart for water
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom
-            ) {
-                val displayData = if (waterData.isNotEmpty()) waterData else listOf(
-                    "Mon" to 0, "Tue" to 0, "Wed" to 0, "Thu" to 0, 
-                    "Fri" to 0, "Sat" to 0, "Sun" to 0
-                )
-                displayData.forEach { (day, glasses) ->
-                    BarChartItem(
-                        day = day,
-                        value = glasses,
-                        maxValue = 8,
-                        color = SkyBlue
-                    )
-                }
+            // Vico bar chart for water
+            val displayData = if (waterData.isNotEmpty()) waterData else listOf(
+                "Mon" to 0, "Tue" to 0, "Wed" to 0, "Thu" to 0,
+                "Fri" to 0, "Sat" to 0, "Sun" to 0
+            )
+            val chartModel = remember(displayData) {
+                entryModelOf(displayData.mapIndexed { i, (_, v) -> entryOf(i.toFloat(), v.toFloat()) })
             }
+            val dayLabels = remember(displayData) { displayData.map { it.first } }
+            val bottomFormatter = AxisValueFormatter<AxisPosition.Horizontal.Bottom> { value, _ ->
+                dayLabels.getOrElse(value.toInt()) { "" }
+            }
+            Chart(
+                chart = columnChart(
+                    columns = listOf(
+                        LineComponent(
+                            color = SkyBlue.toArgb(),
+                            thicknessDp = 16f,
+                            shape = Shapes.roundedCornerShape(topLeftPercent = 40, topRightPercent = 40)
+                        )
+                    )
+                ),
+                model = chartModel,
+                bottomAxis = rememberBottomAxis(valueFormatter = bottomFormatter),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+            )
             
             Spacer(modifier = Modifier.height(12.dp))
             
@@ -788,23 +815,33 @@ private fun SleepHistoryCard(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom
-            ) {
-                val displayData = if (sleepData.isNotEmpty()) sleepData else listOf(
-                    "Mon" to 0f, "Tue" to 0f, "Wed" to 0f, "Thu" to 0f,
-                    "Fri" to 0f, "Sat" to 0f, "Sun" to 0f
-                )
-                displayData.forEach { (day, hours) ->
-                    SleepBarItem(
-                        day = day,
-                        hours = hours,
-                        maxHours = 10f
-                    )
-                }
+            val displayData = if (sleepData.isNotEmpty()) sleepData else listOf(
+                "Mon" to 0f, "Tue" to 0f, "Wed" to 0f, "Thu" to 0f,
+                "Fri" to 0f, "Sat" to 0f, "Sun" to 0f
+            )
+            val chartModel = remember(displayData) {
+                entryModelOf(displayData.mapIndexed { i, (_, v) -> entryOf(i.toFloat(), v) })
             }
+            val dayLabels = remember(displayData) { displayData.map { it.first } }
+            val bottomFormatter = AxisValueFormatter<AxisPosition.Horizontal.Bottom> { value, _ ->
+                dayLabels.getOrElse(value.toInt()) { "" }
+            }
+            Chart(
+                chart = columnChart(
+                    columns = listOf(
+                        LineComponent(
+                            color = MintGreen.toArgb(),
+                            thicknessDp = 16f,
+                            shape = Shapes.roundedCornerShape(topLeftPercent = 40, topRightPercent = 40)
+                        )
+                    )
+                ),
+                model = chartModel,
+                bottomAxis = rememberBottomAxis(valueFormatter = bottomFormatter),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+            )
             
             Spacer(modifier = Modifier.height(12.dp))
             
@@ -856,25 +893,38 @@ private fun StepsHistoryCard(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom
-            ) {
-                val displayData = if (stepsData.isNotEmpty()) stepsData else listOf(
-                    "Mon" to 0, "Tue" to 0, "Wed" to 0, "Thu" to 0,
-                    "Fri" to 0, "Sat" to 0, "Sun" to 0
-                )
-                displayData.forEach { (day, steps) ->
-                    BarChartItem(
-                        day = day,
-                        value = steps / 1000,
-                        maxValue = 12,
-                        color = PrimaryOrange,
-                        displayValue = if (steps > 0) "${steps / 1000}K" else "0"
-                    )
-                }
+            val displayData = if (stepsData.isNotEmpty()) stepsData else listOf(
+                "Mon" to 0, "Tue" to 0, "Wed" to 0, "Thu" to 0,
+                "Fri" to 0, "Sat" to 0, "Sun" to 0
+            )
+            val chartModel = remember(displayData) {
+                entryModelOf(displayData.mapIndexed { i, (_, v) -> entryOf(i.toFloat(), v.toFloat()) })
             }
+            val dayLabels = remember(displayData) { displayData.map { it.first } }
+            val bottomFormatter = AxisValueFormatter<AxisPosition.Horizontal.Bottom> { value, _ ->
+                dayLabels.getOrElse(value.toInt()) { "" }
+            }
+            Chart(
+                chart = columnChart(
+                    columns = listOf(
+                        LineComponent(
+                            color = PrimaryOrange.toArgb(),
+                            thicknessDp = 16f,
+                            shape = Shapes.roundedCornerShape(topLeftPercent = 40, topRightPercent = 40)
+                        )
+                    )
+                ),
+                model = chartModel,
+                bottomAxis = rememberBottomAxis(valueFormatter = bottomFormatter),
+                startAxis = rememberStartAxis(
+                    valueFormatter = AxisValueFormatter<AxisPosition.Vertical.Start> { value, _ ->
+                        "${(value / 1000).toInt()}K"
+                    }
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+            )
             
             Spacer(modifier = Modifier.height(12.dp))
             
@@ -936,22 +986,44 @@ private fun WeightHistoryCard(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Simple weight display
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                val displayData = if (weightData.isNotEmpty()) weightData else listOf(
-                    "Mon" to 0f, "Tue" to 0f, "Wed" to 0f, "Thu" to 0f,
-                    "Fri" to 0f, "Sat" to 0f, "Sun" to 0f
-                )
-                displayData.forEach { (day, weight) ->
-                    WeightDayItem(
-                        day = day, 
-                        weight = if (weight > 0) String.format(Locale.US, "%.1f", weight) else "—"
-                    )
-                }
+            val displayData = if (weightData.isNotEmpty()) weightData else listOf(
+                "Mon" to 0f, "Tue" to 0f, "Wed" to 0f, "Thu" to 0f,
+                "Fri" to 0f, "Sat" to 0f, "Sun" to 0f
+            )
+            val chartModel = remember(displayData) {
+                entryModelOf(displayData.mapIndexed { i, (_, v) -> entryOf(i.toFloat(), v) })
             }
+            val dayLabels = remember(displayData) { displayData.map { it.first } }
+            val bottomFormatter = AxisValueFormatter<AxisPosition.Horizontal.Bottom> { value, _ ->
+                dayLabels.getOrElse(value.toInt()) { "" }
+            }
+            val startFormatter = AxisValueFormatter<AxisPosition.Vertical.Start> { value, _ ->
+                "${"%.0f".format(value)}"
+            }
+            Chart(
+                chart = lineChart(
+                    lines = listOf(
+                        VicoLineChart.LineSpec(
+                            lineColor = CoralPink.toArgb(),
+                            lineThicknessDp = 3f,
+                            lineBackgroundShader = com.patrykandpatrick.vico.core.component.shape.shader.DynamicShaders.fromBrush(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        CoralPink.copy(alpha = 0.3f),
+                                        CoralPink.copy(alpha = 0.0f)
+                                    )
+                                )
+                            )
+                        )
+                    )
+                ),
+                model = chartModel,
+                bottomAxis = rememberBottomAxis(valueFormatter = bottomFormatter),
+                startAxis = rememberStartAxis(valueFormatter = startFormatter),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+            )
             
             Spacer(modifier = Modifier.height(16.dp))
             
@@ -968,26 +1040,6 @@ private fun WeightHistoryCard(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun WeightDayItem(day: String, weight: String) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = weight,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = DeepBlack
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = day,
-            fontSize = 10.sp,
-            color = TextSecondary
-        )
     }
 }
 
@@ -1028,25 +1080,33 @@ private fun CaloriesHistoryCard(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom
-            ) {
-                val displayData = if (caloriesData.isNotEmpty()) caloriesData else listOf(
-                    "Mon" to 0, "Tue" to 0, "Wed" to 0, "Thu" to 0,
-                    "Fri" to 0, "Sat" to 0, "Sun" to 0
-                )
-                displayData.forEach { (day, cal) ->
-                    BarChartItem(
-                        day = day,
-                        value = cal / 100,
-                        maxValue = 25,
-                        color = PrimaryOrange,
-                        displayValue = if (cal > 0) "${cal / 1000}.${(cal % 1000) / 100}K" else "0"
-                    )
-                }
+            val displayData = if (caloriesData.isNotEmpty()) caloriesData else listOf(
+                "Mon" to 0, "Tue" to 0, "Wed" to 0, "Thu" to 0,
+                "Fri" to 0, "Sat" to 0, "Sun" to 0
+            )
+            val chartModel = remember(displayData) {
+                entryModelOf(displayData.mapIndexed { i, (_, v) -> entryOf(i.toFloat(), v.toFloat()) })
             }
+            val dayLabels = remember(displayData) { displayData.map { it.first } }
+            val bottomFormatter = AxisValueFormatter<AxisPosition.Horizontal.Bottom> { value, _ ->
+                dayLabels.getOrElse(value.toInt()) { "" }
+            }
+            Chart(
+                chart = columnChart(
+                    columns = listOf(
+                        LineComponent(
+                            color = PrimaryOrange.toArgb(),
+                            thicknessDp = 16f,
+                            shape = Shapes.roundedCornerShape(topLeftPercent = 40, topRightPercent = 40)
+                        )
+                    )
+                ),
+                model = chartModel,
+                bottomAxis = rememberBottomAxis(valueFormatter = bottomFormatter),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+            )
             
             Spacer(modifier = Modifier.height(12.dp))
             
@@ -1098,25 +1158,33 @@ private fun ExerciseHistoryCard(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom
-            ) {
-                val displayData = if (exerciseData.isNotEmpty()) exerciseData else listOf(
-                    "Mon" to 0, "Tue" to 0, "Wed" to 0, "Thu" to 0,
-                    "Fri" to 0, "Sat" to 0, "Sun" to 0
-                )
-                displayData.forEach { (day, mins) ->
-                    BarChartItem(
-                        day = day,
-                        value = mins,
-                        maxValue = 90,
-                        color = MintGreen,
-                        displayValue = "${mins}m"
-                    )
-                }
+            val displayData = if (exerciseData.isNotEmpty()) exerciseData else listOf(
+                "Mon" to 0, "Tue" to 0, "Wed" to 0, "Thu" to 0,
+                "Fri" to 0, "Sat" to 0, "Sun" to 0
+            )
+            val chartModel = remember(displayData) {
+                entryModelOf(displayData.mapIndexed { i, (_, v) -> entryOf(i.toFloat(), v.toFloat()) })
             }
+            val dayLabels = remember(displayData) { displayData.map { it.first } }
+            val bottomFormatter = AxisValueFormatter<AxisPosition.Horizontal.Bottom> { value, _ ->
+                dayLabels.getOrElse(value.toInt()) { "" }
+            }
+            Chart(
+                chart = columnChart(
+                    columns = listOf(
+                        LineComponent(
+                            color = MintGreen.toArgb(),
+                            thicknessDp = 16f,
+                            shape = Shapes.roundedCornerShape(topLeftPercent = 40, topRightPercent = 40)
+                        )
+                    )
+                ),
+                model = chartModel,
+                bottomAxis = rememberBottomAxis(valueFormatter = bottomFormatter),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+            )
             
             Spacer(modifier = Modifier.height(12.dp))
             
@@ -1128,81 +1196,6 @@ private fun ExerciseHistoryCard(
                 textAlign = TextAlign.Center
             )
         }
-    }
-}
-
-@Composable
-private fun BarChartItem(
-    day: String,
-    value: Int,
-    maxValue: Int,
-    color: Color,
-    displayValue: String? = null
-) {
-    val height = ((value.toFloat() / maxValue) * 80).coerceIn(8f, 80f)
-    
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = displayValue ?: value.toString(),
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Medium,
-            color = DeepBlack
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Box(
-            modifier = Modifier
-                .width(28.dp)
-                .height(height.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .background(color)
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = day,
-            fontSize = 10.sp,
-            color = TextSecondary
-        )
-    }
-}
-
-@Composable
-private fun SleepBarItem(
-    day: String,
-    hours: Float,
-    maxHours: Float
-) {
-    val height = ((hours / maxHours) * 80).coerceIn(8f, 80f)
-    val color = when {
-        hours >= 7.5f -> MintGreen
-        hours >= 6f -> PrimaryOrange
-        else -> CoralPink
-    }
-    
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "${hours}h",
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Medium,
-            color = DeepBlack
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Box(
-            modifier = Modifier
-                .width(28.dp)
-                .height(height.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .background(color)
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = day,
-            fontSize = 10.sp,
-            color = TextSecondary
-        )
     }
 }
 
