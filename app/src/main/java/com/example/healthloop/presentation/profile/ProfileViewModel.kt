@@ -36,6 +36,8 @@ data class ProfileUiState(
     val notificationsEnabled: Boolean = true,
     val darkModeEnabled: Boolean = false,
     val reminderEnabled: Boolean = true,
+    val reminderHour: Int = 23,
+    val reminderMinute: Int = 0,
     val weeklyReportEnabled: Boolean = true,
     val soundEnabled: Boolean = true
 )
@@ -72,6 +74,7 @@ sealed class ProfileEvent {
     object ClearSaveSuccess : ProfileEvent()
     data class ExportData(val context: Context, val format: String) : ProfileEvent()
     data class UpdateSetting(val key: String, val value: Boolean) : ProfileEvent()
+    data class UpdateReminderTime(val hour: Int, val minute: Int) : ProfileEvent()
 }
 
 @HiltViewModel
@@ -110,6 +113,8 @@ class ProfileViewModel @Inject constructor(
                 notificationsEnabled = prefs.getBoolean("notifications", true),
                 darkModeEnabled = prefs.getBoolean("dark_mode", false),
                 reminderEnabled = prefs.getBoolean("reminders", true),
+                reminderHour = prefs.getInt("reminder_hour", 23),
+                reminderMinute = prefs.getInt("reminder_minute", 0),
                 weeklyReportEnabled = prefs.getBoolean("weekly_reports", true),
                 soundEnabled = prefs.getBoolean("sound", true)
             )
@@ -271,11 +276,32 @@ class ProfileViewModel @Inject constructor(
                     when (event.key) {
                         "notifications" -> it.copy(notificationsEnabled = event.value)
                         "dark_mode" -> it.copy(darkModeEnabled = event.value)
-                        "reminders" -> it.copy(reminderEnabled = event.value)
+                        "reminders" -> {
+                            val notifManager = com.example.healthloop.util.NotificationManager(appContext)
+                            if (event.value) {
+                                val hour = _uiState.value.reminderHour
+                                val minute = _uiState.value.reminderMinute
+                                notifManager.scheduleDailyReminder(hour, minute)
+                            } else {
+                                notifManager.cancelDailyReminder()
+                            }
+                            it.copy(reminderEnabled = event.value)
+                        }
                         "weekly_reports" -> it.copy(weeklyReportEnabled = event.value)
                         "sound" -> it.copy(soundEnabled = event.value)
                         else -> it
                     }
+                }
+            }
+            is ProfileEvent.UpdateReminderTime -> {
+                val notifManager = com.example.healthloop.util.NotificationManager(appContext)
+                notifManager.scheduleDailyReminder(event.hour, event.minute)
+                _uiState.update {
+                    it.copy(
+                        reminderHour = event.hour,
+                        reminderMinute = event.minute,
+                        reminderEnabled = true
+                    )
                 }
             }
         }

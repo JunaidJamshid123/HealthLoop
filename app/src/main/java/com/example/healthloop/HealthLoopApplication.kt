@@ -1,6 +1,7 @@
 package com.example.healthloop
 
 import android.app.Application
+import android.content.Context
 import com.example.healthloop.data.local.database.HealthLoopDatabase
 import com.example.healthloop.data.repository.HealthRepositoryImpl
 import com.example.healthloop.domain.repository.HealthRepository
@@ -29,10 +30,14 @@ class HealthLoopApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         
-        // Initialize notification manager
+        // Initialize notification manager and schedule only if user has reminders enabled
         notificationManager = NotificationManager(this)
-        
-        // Schedule daily reminder
-        notificationManager.scheduleDailyReminder()
+        val prefs = getSharedPreferences("profile_settings", Context.MODE_PRIVATE)
+        val reminderEnabled = prefs.getBoolean("reminders", true)
+        if (reminderEnabled) {
+            val hour = prefs.getInt("reminder_hour", 23)
+            val minute = prefs.getInt("reminder_minute", 0)
+            notificationManager.scheduleDailyReminder(hour, minute)
+        }
     }
 }

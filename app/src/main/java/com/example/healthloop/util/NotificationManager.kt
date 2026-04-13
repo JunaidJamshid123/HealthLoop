@@ -1,36 +1,101 @@
 package com.example.healthloop.util
 
-import android.content.Context
-import androidx.work.*
-import com.example.healthloop.worker.DailyReminderWorker
-import java.util.concurrent.TimeUnit
+import android.app.AlarmManager
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
-import com.example.healthloop.MainActivity
+import android.os.Build
+import com.example.healthloop.receiver.ReminderReceiver
+import java.util.Calendar
 
 class NotificationManager(private val context: Context) {
 
-    fun scheduleDailyReminder() {
-        val constraints = Constraints.Builder()
-            .setRequiresBatteryNotLow(true)
-            .build()
-
-        val dailyReminderRequest = PeriodicWorkRequestBuilder<DailyReminderWorker>(
-            24, TimeUnit.HOURS,
-            15, TimeUnit.MINUTES
-        )
-            .setConstraints(constraints)
-            .build()
-
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-            "daily_reminder",
-            ExistingPeriodicWorkPolicy.KEEP,
-            dailyReminderRequest
-        )
+    companion object {
+        private const val REMINDER_REQUEST_CODE = 2001
     }
 
+    /**
+     * Schedules a daily reminder alarm at the given hour and minute.
+     * If the time has already passed today, it schedules for tomorrow.
+     */
+    fun scheduleDailyReminder(hour: Int = 23, minute: Int = 0) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+        val intent = Intent(context, ReminderReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            REMINDER_REQUEST_CODE,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Calculate the next trigger time
+        val calendar = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+
+            // If the time has already passed today, schedule for tomorrow
+            if (timeInMillis <= System.currentTimeMillis()) {
+                add(Calendar.DAY_OF_YEAR, 1)
+            }
+        }
+
+        // Use setExactAndAllowWhileIdle for precise delivery even in Doze mode
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // Android 12+ requires checking canScheduleExactAlarms
+            if (alarmManager.canScheduleExactAlarms()) {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    calendar.timeInMillis,
+                    pendingIntent
+                )
+            } else {
+                // Fallback to inexact alarm if exact alarm permission not granted
+                alarmManager.setAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    calendar.timeInMillis,
+                    pendingIntent
+                )
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                calendar.timeInMillis,
+                pendingIntent
+            )
+        } else {
+            alarmManager.setExact(
+                AlarmManager.RTC_WAKEUP,
+                calendar.timeInMillis,
+                pendingIntent
+            )
+        }
+
+        // Persist the reminder time
+        context.getSharedPreferences("profile_settings", Context.MODE_PRIVATE)
+            .edit()
+            .putInt("reminder_hour", hour)
+            .putInt("reminder_minute", minute)
+            .putBoolean("reminders", true)
+            .apply()
+    }
+
+    /**
+     * Cancels the scheduled daily reminder alarm.
+     */
     fun cancelDailyReminder() {
-        WorkManager.getInstance(context).cancelUniqueWork("daily_reminder")
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(context, ReminderReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            REMINDER_REQUEST_CODE,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        alarmManager.cancel(pendingIntent)
+        pendingIntent.cancel()
     }
 
     fun showEntryAddedNotification() {
@@ -39,7 +104,7 @@ class NotificationManager(private val context: Context) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
 
         // Create channel if needed
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = android.app.NotificationChannel(
                 channelId,
                 "Entry Added",
@@ -51,14 +116,14 @@ class NotificationManager(private val context: Context) {
         }
 
         // PendingIntent to open MainActivity
-        val intent = Intent(context, MainActivity::class.java).apply {
+        val openIntent = Intent(context, com.example.healthloop.MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
         val pendingIntent = PendingIntent.getActivity(
             context,
             0,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or (if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+            openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val notification = androidx.core.app.NotificationCompat.Builder(context, channelId)

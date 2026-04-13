@@ -12,6 +12,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -760,9 +761,14 @@ private fun WaterHistoryCard(
                 ),
                 model = chartModel,
                 bottomAxis = rememberBottomAxis(valueFormatter = bottomFormatter),
+                startAxis = rememberStartAxis(
+                    valueFormatter = AxisValueFormatter<AxisPosition.Vertical.Start> { value, _ ->
+                        "${value.toInt()}"
+                    }
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(160.dp)
+                    .height(180.dp)
             )
             
             Spacer(modifier = Modifier.height(12.dp))
@@ -838,9 +844,14 @@ private fun SleepHistoryCard(
                 ),
                 model = chartModel,
                 bottomAxis = rememberBottomAxis(valueFormatter = bottomFormatter),
+                startAxis = rememberStartAxis(
+                    valueFormatter = AxisValueFormatter<AxisPosition.Vertical.Start> { value, _ ->
+                        "${"%.0f".format(value)}h"
+                    }
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(160.dp)
+                    .height(180.dp)
             )
             
             Spacer(modifier = Modifier.height(12.dp))
@@ -918,12 +929,12 @@ private fun StepsHistoryCard(
                 bottomAxis = rememberBottomAxis(valueFormatter = bottomFormatter),
                 startAxis = rememberStartAxis(
                     valueFormatter = AxisValueFormatter<AxisPosition.Vertical.Start> { value, _ ->
-                        "${(value / 1000).toInt()}K"
+                        if (value >= 1000) "${(value / 1000).toInt()}K" else "${value.toInt()}"
                     }
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(160.dp)
+                    .height(180.dp)
             )
             
             Spacer(modifier = Modifier.height(12.dp))
@@ -998,7 +1009,7 @@ private fun WeightHistoryCard(
                 dayLabels.getOrElse(value.toInt()) { "" }
             }
             val startFormatter = AxisValueFormatter<AxisPosition.Vertical.Start> { value, _ ->
-                "${"%.0f".format(value)}"
+                "${"%.0f".format(value)} kg"
             }
             Chart(
                 chart = lineChart(
@@ -1022,7 +1033,7 @@ private fun WeightHistoryCard(
                 startAxis = rememberStartAxis(valueFormatter = startFormatter),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(160.dp)
+                    .height(180.dp)
             )
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -1103,9 +1114,14 @@ private fun CaloriesHistoryCard(
                 ),
                 model = chartModel,
                 bottomAxis = rememberBottomAxis(valueFormatter = bottomFormatter),
+                startAxis = rememberStartAxis(
+                    valueFormatter = AxisValueFormatter<AxisPosition.Vertical.Start> { value, _ ->
+                        if (value >= 1000) "${(value / 1000).toInt()}K" else "${value.toInt()}"
+                    }
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(160.dp)
+                    .height(180.dp)
             )
             
             Spacer(modifier = Modifier.height(12.dp))
@@ -1181,9 +1197,14 @@ private fun ExerciseHistoryCard(
                 ),
                 model = chartModel,
                 bottomAxis = rememberBottomAxis(valueFormatter = bottomFormatter),
+                startAxis = rememberStartAxis(
+                    valueFormatter = AxisValueFormatter<AxisPosition.Vertical.Start> { value, _ ->
+                        "${value.toInt()} min"
+                    }
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(160.dp)
+                    .height(180.dp)
             )
             
             Spacer(modifier = Modifier.height(12.dp))
@@ -1415,7 +1436,8 @@ private fun MoodHistoryCard(
                         moodIcon = moodIcon,
                         backgroundColor = backgroundColor,
                         iconSize = moodIconSize,
-                        emojiSize = emojiSize
+                        emojiSize = emojiSize,
+                        isLogged = mood.isNotBlank()
                     )
                 }
             }
@@ -1427,7 +1449,7 @@ private fun MoodHistoryCard(
 @Composable
 private fun getMoodIconAndColor(mood: String): Pair<Int, Color> {
     if (mood.isBlank()) {
-        return R.drawable.smile to Color(0xFFE8F5E9) // Default normal/neutral mood - light green
+        return R.drawable.smile to Color(0xFFF5F5F5) // Unlogged - light gray
     }
     
     val normalizedMood = mood.lowercase().trim()
@@ -1463,7 +1485,8 @@ private fun MoodDayItem(
     moodIcon: Int,
     backgroundColor: Color,
     iconSize: Dp,
-    emojiSize: Dp
+    emojiSize: Dp,
+    isLogged: Boolean = true
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
@@ -1471,27 +1494,60 @@ private fun MoodDayItem(
         Box(
             modifier = Modifier
                 .size(iconSize)
-                .background(
-                    color = backgroundColor,
-                    shape = CircleShape
+                .then(
+                    if (!isLogged) {
+                        Modifier
+                            .border(
+                                width = 1.dp,
+                                color = Color(0xFFBDBDBD),
+                                shape = CircleShape
+                            )
+                            .background(
+                                color = backgroundColor,
+                                shape = CircleShape
+                            )
+                    } else {
+                        Modifier.background(
+                            color = backgroundColor,
+                            shape = CircleShape
+                        )
+                    }
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Image(
-                painter = painterResource(id = moodIcon),
-                contentDescription = day,
-                modifier = Modifier.size(emojiSize),
-                contentScale = ContentScale.Fit
-            )
+            if (!isLogged) {
+                Text(
+                    text = "—",
+                    fontSize = 16.sp,
+                    color = Color(0xFFBDBDBD),
+                    fontWeight = FontWeight.Bold
+                )
+            } else {
+                Image(
+                    painter = painterResource(id = moodIcon),
+                    contentDescription = day,
+                    modifier = Modifier.size(emojiSize),
+                    contentScale = ContentScale.Fit
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         Text(
             text = day,
             fontSize = 12.sp,
-            color = TextSecondary,
+            color = if (isLogged) TextSecondary else Color(0xFFBDBDBD),
             fontWeight = FontWeight.Medium
         )
+
+        if (!isLogged) {
+            Text(
+                text = "No log",
+                fontSize = 8.sp,
+                color = Color(0xFFBDBDBD),
+                fontWeight = FontWeight.Normal
+            )
+        }
     }
 }

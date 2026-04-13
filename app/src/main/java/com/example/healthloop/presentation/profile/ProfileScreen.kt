@@ -212,6 +212,11 @@ fun ProfileScreen(
                         onDarkModeChange = { viewModel.onEvent(ProfileEvent.UpdateSetting("dark_mode", it)) },
                         reminderEnabled = uiState.reminderEnabled,
                         onReminderChange = { viewModel.onEvent(ProfileEvent.UpdateSetting("reminders", it)) },
+                        reminderHour = uiState.reminderHour,
+                        reminderMinute = uiState.reminderMinute,
+                        onReminderTimeChange = { hour, minute ->
+                            viewModel.onEvent(ProfileEvent.UpdateReminderTime(hour, minute))
+                        },
                         weeklyReportEnabled = uiState.weeklyReportEnabled,
                         onWeeklyReportChange = { viewModel.onEvent(ProfileEvent.UpdateSetting("weekly_reports", it)) },
                         soundEnabled = uiState.soundEnabled,
@@ -1250,11 +1255,16 @@ private fun SettingsSection(
     onDarkModeChange: (Boolean) -> Unit,
     reminderEnabled: Boolean,
     onReminderChange: (Boolean) -> Unit,
+    reminderHour: Int,
+    reminderMinute: Int,
+    onReminderTimeChange: (Int, Int) -> Unit,
     weeklyReportEnabled: Boolean,
     onWeeklyReportChange: (Boolean) -> Unit,
     soundEnabled: Boolean,
     onSoundChange: (Boolean) -> Unit
 ) {
+    var showTimePicker by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -1311,12 +1321,13 @@ private fun SettingsSection(
             
             SettingsDivider()
             
-            SettingToggleItem(
-                icon = Icons.Outlined.Alarm,
-                title = "Daily Reminders",
-                subtitle = "Log your health data",
-                isEnabled = reminderEnabled,
-                onToggle = onReminderChange
+            // Daily Reminders with time picker
+            ReminderSettingItem(
+                reminderEnabled = reminderEnabled,
+                onReminderChange = onReminderChange,
+                reminderHour = reminderHour,
+                reminderMinute = reminderMinute,
+                onTimeClick = { showTimePicker = true }
             )
             
             SettingsDivider()
@@ -1339,6 +1350,18 @@ private fun SettingsSection(
                 onToggle = onSoundChange
             )
         }
+    }
+
+    if (showTimePicker) {
+        ReminderTimePickerDialog(
+            currentHour = reminderHour,
+            currentMinute = reminderMinute,
+            onConfirm = { hour, minute ->
+                onReminderTimeChange(hour, minute)
+                showTimePicker = false
+            },
+            onDismiss = { showTimePicker = false }
+        )
     }
 }
 
@@ -1397,6 +1420,195 @@ private fun SettingToggleItem(
             )
         )
     }
+}
+
+@Composable
+private fun ReminderSettingItem(
+    reminderEnabled: Boolean,
+    onReminderChange: (Boolean) -> Unit,
+    reminderHour: Int,
+    reminderMinute: Int,
+    onTimeClick: () -> Unit
+) {
+    val formattedTime = remember(reminderHour, reminderMinute) {
+        val cal = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, reminderHour)
+            set(Calendar.MINUTE, reminderMinute)
+        }
+        SimpleDateFormat("hh:mm a", Locale.getDefault()).format(cal.time)
+    }
+
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(WarmBeige, RoundedCornerShape(10.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Alarm,
+                    contentDescription = "Daily Reminders",
+                    tint = DeepBlack,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Daily Reminders",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = DeepBlack
+                )
+                Text(
+                    text = "Log your health data",
+                    fontSize = 11.sp,
+                    color = TextSecondary
+                )
+            }
+
+            Switch(
+                checked = reminderEnabled,
+                onCheckedChange = onReminderChange,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = SoftGreen,
+                    uncheckedThumbColor = Color.White,
+                    uncheckedTrackColor = WarmBeigeDark
+                )
+            )
+        }
+
+        // Time selector row
+        if (reminderEnabled) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 52.dp, end = 4.dp, bottom = 6.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(WarmBeige.copy(alpha = 0.5f))
+                    .clickable { onTimeClick() }
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Outlined.Schedule,
+                        contentDescription = "Set Time",
+                        tint = PrimaryOrange,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Reminder Time",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = DeepBlack
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = formattedTime,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = PrimaryOrange
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(
+                        imageVector = Icons.Filled.ChevronRight,
+                        contentDescription = "Change time",
+                        tint = TextSecondary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ReminderTimePickerDialog(
+    currentHour: Int,
+    currentMinute: Int,
+    onConfirm: (Int, Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var selectedHour by remember { mutableIntStateOf(currentHour) }
+    var selectedMinute by remember { mutableIntStateOf(currentMinute) }
+
+    val timePickerState = rememberTimePickerState(
+        initialHour = currentHour,
+        initialMinute = currentMinute,
+        is24Hour = false
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color.White,
+        shape = RoundedCornerShape(24.dp),
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Outlined.Alarm,
+                    contentDescription = null,
+                    tint = PrimaryOrange,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "Set Reminder Time",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = DeepBlack
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                TimePicker(
+                    state = timePickerState,
+                    colors = TimePickerDefaults.colors(
+                        clockDialColor = WarmBeige,
+                        selectorColor = PrimaryOrange,
+                        containerColor = Color.White,
+                        periodSelectorSelectedContainerColor = PrimaryOrange.copy(alpha = 0.2f),
+                        periodSelectorSelectedContentColor = PrimaryOrange,
+                        timeSelectorSelectedContainerColor = PrimaryOrange.copy(alpha = 0.2f),
+                        timeSelectorSelectedContentColor = PrimaryOrange,
+                        timeSelectorUnselectedContainerColor = WarmBeige,
+                        timeSelectorUnselectedContentColor = DeepBlack
+                    )
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(timePickerState.hour, timePickerState.minute) },
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Set Reminder", color = Color.White, fontWeight = FontWeight.SemiBold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = TextSecondary)
+            }
+        }
+    )
 }
 
 @Composable
