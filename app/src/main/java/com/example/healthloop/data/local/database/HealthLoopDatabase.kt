@@ -39,7 +39,6 @@ abstract class HealthLoopDatabase : RoomDatabase() {
                     HealthLoopDatabase::class.java,
                     "health_loop_database"
                 )
-                .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance
                 instance

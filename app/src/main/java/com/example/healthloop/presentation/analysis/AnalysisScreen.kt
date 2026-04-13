@@ -317,7 +317,7 @@ fun MetricSelector(selectedMetric: HealthMetric, onMetricSelected: (HealthMetric
         Triple(HealthMetric.WATER, "Water", R.drawable.waterr),
         Triple(HealthMetric.SLEEP, "Sleep", R.drawable.sleepingg),
         Triple(HealthMetric.STEPS, "Steps", R.drawable.walkk),
-        Triple(HealthMetric.WEIGHT, "Weight", R.drawable.weight)
+        Triple(HealthMetric.WEIGHT, "Weight", R.drawable.weightt)
     )
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -428,7 +428,7 @@ fun SummaryStatsSection(stats: AnalysisUiState) {
                     unit = "kg",
                     min = stats.weightStats.min,
                     max = stats.weightStats.max,
-                    icon = R.drawable.weight,
+                    icon = R.drawable.weightt,
                     trend = stats.weightTrend,
                     color = CoralPink,
                     modifier = Modifier.weight(1f)

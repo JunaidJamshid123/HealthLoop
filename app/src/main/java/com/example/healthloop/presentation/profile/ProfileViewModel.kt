@@ -1,6 +1,7 @@
 package com.example.healthloop.presentation.profile
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.lifecycle.ViewModel
@@ -11,10 +12,14 @@ import com.example.healthloop.domain.model.UserProfile
 import com.example.healthloop.domain.model.UserStats
 import com.example.healthloop.domain.model.HealthEntry
 import com.example.healthloop.domain.usecase.GetHealthEntriesUseCase
+import com.example.healthloop.domain.usecase.GetTodayEntryUseCase
 import com.example.healthloop.domain.usecase.profile.*
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.util.Calendar
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 data class ProfileUiState(
@@ -23,9 +28,16 @@ data class ProfileUiState(
     val userGoals: UserGoals = UserGoals.default(),
     val userStats: UserStats = UserStats.default(),
     val profilePictureBitmap: Bitmap? = null,
+    val todayEntry: HealthEntry? = null,
     val error: String? = null,
     val isSaving: Boolean = false,
-    val saveSuccess: Boolean = false
+    val saveSuccess: Boolean = false,
+    // Settings
+    val notificationsEnabled: Boolean = true,
+    val darkModeEnabled: Boolean = false,
+    val reminderEnabled: Boolean = true,
+    val weeklyReportEnabled: Boolean = true,
+    val soundEnabled: Boolean = true
 )
 
 sealed class ProfileEvent {
@@ -59,6 +71,7 @@ sealed class ProfileEvent {
     object ClearError : ProfileEvent()
     object ClearSaveSuccess : ProfileEvent()
     data class ExportData(val context: Context, val format: String) : ProfileEvent()
+    data class UpdateSetting(val key: String, val value: Boolean) : ProfileEvent()
 }
 
 @HiltViewModel
@@ -73,15 +86,125 @@ class ProfileViewModel @Inject constructor(
     private val getUserStatsUseCase: GetUserStatsUseCase,
     private val updateUserStatsUseCase: UpdateUserStatsUseCase,
     private val initializeUserDataUseCase: InitializeUserDataUseCase,
-    private val getHealthEntriesUseCase: GetHealthEntriesUseCase
+    private val getHealthEntriesUseCase: GetHealthEntriesUseCase,
+    private val getTodayEntryUseCase: GetTodayEntryUseCase,
+    @ApplicationContext private val appContext: Context
 ) : ViewModel() {
+
+    private val prefs: SharedPreferences = appContext.getSharedPreferences("profile_settings", Context.MODE_PRIVATE)
 
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
     init {
+        loadSettings()
         initializeData()
         observeUserData()
+        observeTodayEntry()
+        computeStatsFromEntries()
+    }
+
+    private fun loadSettings() {
+        _uiState.update {
+            it.copy(
+                notificationsEnabled = prefs.getBoolean("notifications", true),
+                darkModeEnabled = prefs.getBoolean("dark_mode", false),
+                reminderEnabled = prefs.getBoolean("reminders", true),
+                weeklyReportEnabled = prefs.getBoolean("weekly_reports", true),
+                soundEnabled = prefs.getBoolean("sound", true)
+            )
+        }
+    }
+
+    private fun saveSetting(key: String, value: Boolean) {
+        prefs.edit().putBoolean(key, value).apply()
+    }
+
+    private fun observeTodayEntry() {
+        viewModelScope.launch {
+            getTodayEntryUseCase().collect { entry ->
+                _uiState.update { it.copy(todayEntry = entry) }
+            }
+        }
+    }
+
+    private fun computeStatsFromEntries() {
+        viewModelScope.launch {
+            getHealthEntriesUseCase().collect { entries ->
+                if (entries.isEmpty()) return@collect
+
+                val totalDays = entries.map { entry ->
+                    val cal = Calendar.getInstance().apply { time = entry.date }
+                    cal.get(Calendar.YEAR) * 1000 + cal.get(Calendar.DAY_OF_YEAR)
+                }.distinct().size
+
+                // Compute streaks from sorted distinct days
+                val sortedDays = entries.map { entry ->
+                    val cal = Calendar.getInstance().apply { time = entry.date }
+                    cal.set(Calendar.HOUR_OF_DAY, 0)
+                    cal.set(Calendar.MINUTE, 0)
+                    cal.set(Calendar.SECOND, 0)
+                    cal.set(Calendar.MILLISECOND, 0)
+                    cal.timeInMillis
+                }.distinct().sortedDescending()
+
+                var currentStreak = 0
+                var bestStreak = 0
+                val todayStart = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+                val oneDayMs = TimeUnit.DAYS.toMillis(1)
+
+                // Current streak: consecutive days from today backwards
+                var expectedDay = todayStart
+                for (day in sortedDays) {
+                    if (day == expectedDay) {
+                        currentStreak++
+                        expectedDay -= oneDayMs
+                    } else if (day < expectedDay) {
+                        break
+                    }
+                }
+
+                // Best streak: find longest consecutive run
+                val sortedAsc = sortedDays.sortedDescending().reversed()
+                var streak = 1
+                bestStreak = 1
+                for (i in 1 until sortedAsc.size) {
+                    if (sortedAsc[i] - sortedAsc[i - 1] == oneDayMs) {
+                        streak++
+                        bestStreak = maxOf(bestStreak, streak)
+                    } else {
+                        streak = 1
+                    }
+                }
+                if (sortedAsc.size <= 1) bestStreak = sortedAsc.size
+
+                // Health score: based on goal achievement from recent entries
+                val goals = _uiState.value.userGoals
+                val recentEntries = entries.sortedByDescending { it.date }.take(7)
+                val healthScore = if (recentEntries.isNotEmpty() && goals.waterGoal > 0) {
+                    val waterScore = (recentEntries.map { it.waterIntake.toFloat() / goals.waterGoal }.average() * 100).coerceAtMost(100.0)
+                    val sleepScore = if (goals.sleepGoal > 0) (recentEntries.map { it.sleepHours / goals.sleepGoal }.average() * 100).coerceAtMost(100.0) else 50.0
+                    val stepsScore = if (goals.stepsGoal > 0) (recentEntries.map { it.stepCount.toFloat() / goals.stepsGoal }.average() * 100).coerceAtMost(100.0) else 50.0
+                    val exerciseScore = if (goals.exerciseGoal > 0) (recentEntries.map { it.exerciseMinutes.toFloat() / goals.exerciseGoal }.average() * 100).coerceAtMost(100.0) else 50.0
+                    ((waterScore + sleepScore + stepsScore + exerciseScore) / 4).toInt()
+                } else 0
+
+                // Persist computed stats
+                try {
+                    updateUserStatsUseCase(
+                        totalDays = totalDays,
+                        currentStreak = currentStreak,
+                        bestStreak = bestStreak,
+                        healthScore = healthScore
+                    )
+                } catch (_: Exception) { }
+            }
+        }
     }
 
     private fun initializeData() {
@@ -100,7 +223,7 @@ class ProfileViewModel @Inject constructor(
             getUserProfileUseCase().collect { profile ->
                 profile?.let { userProfile ->
                     val bitmap = userProfile.profilePictureBase64?.let { 
-                        ImageUtils.base64ToBitmap(it) 
+                        ImageUtils.resolveToBitmap(it) 
                     }
                     _uiState.update { state ->
                         state.copy(
@@ -142,6 +265,19 @@ class ProfileViewModel @Inject constructor(
             is ProfileEvent.ClearError -> _uiState.update { it.copy(error = null) }
             is ProfileEvent.ClearSaveSuccess -> _uiState.update { it.copy(saveSuccess = false) }
             is ProfileEvent.ExportData -> exportData(event.context, event.format)
+            is ProfileEvent.UpdateSetting -> {
+                saveSetting(event.key, event.value)
+                _uiState.update {
+                    when (event.key) {
+                        "notifications" -> it.copy(notificationsEnabled = event.value)
+                        "dark_mode" -> it.copy(darkModeEnabled = event.value)
+                        "reminders" -> it.copy(reminderEnabled = event.value)
+                        "weekly_reports" -> it.copy(weeklyReportEnabled = event.value)
+                        "sound" -> it.copy(soundEnabled = event.value)
+                        else -> it
+                    }
+                }
+            }
         }
     }
 
@@ -189,26 +325,26 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
             try {
-                // Convert URI to Base64
-                val base64Image = ImageUtils.uriToBase64(context, uri)
+                // Save image to file storage instead of Base64 in DB
+                val filePath = ImageUtils.saveImageToFile(context, uri)
                 
-                if (base64Image != null) {
+                if (filePath != null) {
                     // Check if profile exists
                     val existingProfile = getUserProfileUseCase.getOnce()
                     
                     if (existingProfile != null) {
-                        // Update profile picture
-                        updateProfilePictureUseCase(base64Image)
+                        // Update profile picture with file path
+                        updateProfilePictureUseCase(filePath)
                     } else {
-                        // Create profile with picture
+                        // Create profile with picture file path
                         val newProfile = UserProfile.default().copy(
-                            profilePictureBase64 = base64Image
+                            profilePictureBase64 = filePath
                         )
                         saveUserProfileUseCase(newProfile)
                     }
                     
-                    // Update bitmap in UI state
-                    val bitmap = ImageUtils.base64ToBitmap(base64Image)
+                    // Load bitmap from file for UI
+                    val bitmap = ImageUtils.loadBitmapFromFile(filePath)
                     _uiState.update { 
                         it.copy(
                             profilePictureBitmap = bitmap,
@@ -239,6 +375,8 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
             try {
+                // Delete the image file
+                ImageUtils.deleteProfileImage(appContext)
                 updateProfilePictureUseCase(null)
                 _uiState.update { 
                     it.copy(

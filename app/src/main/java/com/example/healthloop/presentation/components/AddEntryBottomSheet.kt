@@ -207,7 +207,7 @@ fun AddEntryBottomSheet(
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         EntryField(
-                            icon = R.drawable.weight,
+                            icon = R.drawable.weightt,
                             iconTint = null,
                             title = "Weight",
                             value = weight,

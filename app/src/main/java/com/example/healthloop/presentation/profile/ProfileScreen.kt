@@ -70,13 +70,6 @@ fun ProfileScreen(
         }
     }
     
-    // Settings state (local for now - can be moved to preferences later)
-    var notificationsEnabled by remember { mutableStateOf(true) }
-    var darkModeEnabled by remember { mutableStateOf(false) }
-    var reminderEnabled by remember { mutableStateOf(true) }
-    var weeklyReportEnabled by remember { mutableStateOf(true) }
-    var soundEnabled by remember { mutableStateOf(true) }
-    
     // Show snackbar on save success
     val snackbarHostState = remember { SnackbarHostState() }
     
@@ -195,6 +188,7 @@ fun ProfileScreen(
                         caloriesGoal = uiState.userGoals.caloriesGoal,
                         exerciseGoal = uiState.userGoals.exerciseGoal,
                         weightGoal = uiState.userGoals.weightGoal,
+                        todayEntry = uiState.todayEntry,
                         onEditClick = { showEditGoalsDialog = true }
                     )
                     
@@ -212,16 +206,16 @@ fun ProfileScreen(
                     
                     // Settings Section
                     SettingsSection(
-                        notificationsEnabled = notificationsEnabled,
-                        onNotificationsChange = { notificationsEnabled = it },
-                        darkModeEnabled = darkModeEnabled,
-                        onDarkModeChange = { darkModeEnabled = it },
-                        reminderEnabled = reminderEnabled,
-                        onReminderChange = { reminderEnabled = it },
-                        weeklyReportEnabled = weeklyReportEnabled,
-                        onWeeklyReportChange = { weeklyReportEnabled = it },
-                        soundEnabled = soundEnabled,
-                        onSoundChange = { soundEnabled = it }
+                        notificationsEnabled = uiState.notificationsEnabled,
+                        onNotificationsChange = { viewModel.onEvent(ProfileEvent.UpdateSetting("notifications", it)) },
+                        darkModeEnabled = uiState.darkModeEnabled,
+                        onDarkModeChange = { viewModel.onEvent(ProfileEvent.UpdateSetting("dark_mode", it)) },
+                        reminderEnabled = uiState.reminderEnabled,
+                        onReminderChange = { viewModel.onEvent(ProfileEvent.UpdateSetting("reminders", it)) },
+                        weeklyReportEnabled = uiState.weeklyReportEnabled,
+                        onWeeklyReportChange = { viewModel.onEvent(ProfileEvent.UpdateSetting("weekly_reports", it)) },
+                        soundEnabled = uiState.soundEnabled,
+                        onSoundChange = { viewModel.onEvent(ProfileEvent.UpdateSetting("sound", it)) }
                     )
                     
                     Spacer(modifier = Modifier.height(20.dp))
@@ -356,7 +350,7 @@ private fun ExportFormatDialog(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Outlined.FileDownload,
-                    contentDescription = null,
+                    contentDescription = "Export",
                     tint = PrimaryOrange,
                     modifier = Modifier.size(24.dp)
                 )
@@ -400,7 +394,7 @@ private fun ExportFormatDialog(
             ) {
                 Icon(
                     Icons.Outlined.FileDownload,
-                    contentDescription = null,
+                    contentDescription = "Export",
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
@@ -458,7 +452,7 @@ private fun ExportFormatOption(
             ) {
                 Icon(
                     imageVector = icon,
-                    contentDescription = null,
+                    contentDescription = title,
                     tint = if (selected) PrimaryOrange else DeepBlack,
                     modifier = Modifier.size(20.dp)
                 )
@@ -613,7 +607,7 @@ private fun ProfileCard(
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Email,
-                                contentDescription = null,
+                                contentDescription = "Email",
                                 tint = TextSecondary,
                                 modifier = Modifier.size(14.dp)
                             )
@@ -640,7 +634,7 @@ private fun ProfileCard(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Outlined.Star,
-                                            contentDescription = null,
+                                            contentDescription = "Pro Member",
                                             tint = SoftGreenDark,
                                             modifier = Modifier.size(12.dp)
                                         )
@@ -719,7 +713,7 @@ private fun ImagePickerOptionsDialog(
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.PhotoLibrary,
-                            contentDescription = null,
+                            contentDescription = "Choose from gallery",
                             tint = SoftGreenDark,
                             modifier = Modifier.size(24.dp)
                         )
@@ -747,7 +741,7 @@ private fun ImagePickerOptionsDialog(
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.Delete,
-                            contentDescription = null,
+                            contentDescription = "Remove photo",
                             tint = Color(0xFFD32F2F),
                             modifier = Modifier.size(24.dp)
                         )
@@ -847,7 +841,7 @@ private fun StatMiniCard(
             ) {
                 Icon(
                     imageVector = icon,
-                    contentDescription = null,
+                    contentDescription = label,
                     tint = color,
                     modifier = Modifier.size(18.dp)
                 )
@@ -877,8 +871,19 @@ private fun GoalsSection(
     caloriesGoal: Int,
     exerciseGoal: Int,
     weightGoal: Float,
+    todayEntry: com.example.healthloop.domain.model.HealthEntry?,
     onEditClick: () -> Unit
 ) {
+    // Compute actual progress from today's health entry
+    val waterProgress = if (waterGoal > 0 && todayEntry != null) (todayEntry.waterIntake.toFloat() / waterGoal).coerceIn(0f, 1f) else 0f
+    val sleepProgress = if (sleepGoal > 0 && todayEntry != null) (todayEntry.sleepHours / sleepGoal).coerceIn(0f, 1f) else 0f
+    val stepsProgress = if (stepsGoal > 0 && todayEntry != null) (todayEntry.stepCount.toFloat() / stepsGoal).coerceIn(0f, 1f) else 0f
+    val caloriesProgress = if (caloriesGoal > 0 && todayEntry != null) (todayEntry.calories.toFloat() / caloriesGoal).coerceIn(0f, 1f) else 0f
+    val exerciseProgress = if (exerciseGoal > 0 && todayEntry != null) (todayEntry.exerciseMinutes.toFloat() / exerciseGoal).coerceIn(0f, 1f) else 0f
+    val weightProgress = if (weightGoal > 0 && todayEntry != null && todayEntry.weight > 0) {
+        val diff = kotlin.math.abs(todayEntry.weight - weightGoal)
+        (1f - (diff / weightGoal)).coerceIn(0f, 1f)
+    } else 0f
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -905,7 +910,7 @@ private fun GoalsSection(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Outlined.Flag,
-                        contentDescription = null,
+                        contentDescription = "Daily Goals",
                         tint = PrimaryOrange,
                         modifier = Modifier.size(22.dp)
                     )
@@ -941,22 +946,22 @@ private fun GoalsSection(
                     GoalItem(
                         icon = R.drawable.waterr,
                         label = "Water",
-                        value = "$waterGoal glasses",
-                        progress = 0.75f,
+                        value = if (todayEntry != null) "${todayEntry.waterIntake}/$waterGoal glasses" else "$waterGoal glasses",
+                        progress = waterProgress,
                         color = SkyBlue
                     )
                     GoalItem(
                         icon = R.drawable.walkk,
                         label = "Steps",
-                        value = "${stepsGoal / 1000}K steps",
-                        progress = 0.65f,
+                        value = if (todayEntry != null) "${todayEntry.stepCount}/${stepsGoal / 1000}K" else "${stepsGoal / 1000}K steps",
+                        progress = stepsProgress,
                         color = MintGreen
                     )
                     GoalItem(
                         icon = R.drawable.excercisee,
                         label = "Exercise",
-                        value = "$exerciseGoal min",
-                        progress = 0.80f,
+                        value = if (todayEntry != null) "${todayEntry.exerciseMinutes}/$exerciseGoal min" else "$exerciseGoal min",
+                        progress = exerciseProgress,
                         color = CoralPink
                     )
                 }
@@ -967,22 +972,22 @@ private fun GoalsSection(
                     GoalItem(
                         icon = R.drawable.sleepingg,
                         label = "Sleep",
-                        value = "${sleepGoal.toInt()} hours",
-                        progress = 0.90f,
+                        value = if (todayEntry != null) "${todayEntry.sleepHours.toInt()}/${sleepGoal.toInt()} hrs" else "${sleepGoal.toInt()} hours",
+                        progress = sleepProgress,
                         color = SoftGreen
                     )
                     GoalItem(
                         icon = R.drawable.calaroiess,
                         label = "Calories",
-                        value = "$caloriesGoal kcal",
-                        progress = 0.55f,
+                        value = if (todayEntry != null) "${todayEntry.calories}/$caloriesGoal" else "$caloriesGoal kcal",
+                        progress = caloriesProgress,
                         color = PrimaryOrange
                     )
                     GoalItem(
-                        icon = R.drawable.weight,
+                        icon = R.drawable.weightt,
                         label = "Weight",
-                        value = "${weightGoal.toInt()} kg",
-                        progress = 0.70f,
+                        value = if (todayEntry != null && todayEntry.weight > 0) "${todayEntry.weight.toInt()}/${weightGoal.toInt()} kg" else "${weightGoal.toInt()} kg",
+                        progress = weightProgress,
                         color = SkyBlue
                     )
                 }
@@ -1005,6 +1010,13 @@ private fun GoalItem(
         label = "goalProgress"
     )
     
+    val progressColor = when {
+        progress >= 0.8f -> MintGreen
+        progress >= 0.5f -> PrimaryOrange
+        progress > 0f -> CoralPink
+        else -> color
+    }
+    
     Card(
         colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f)),
         shape = RoundedCornerShape(12.dp),
@@ -1018,17 +1030,31 @@ private fun GoalItem(
         ) {
             Image(
                 painter = painterResource(id = icon),
-                contentDescription = null,
+                contentDescription = label,
                 modifier = Modifier.size(28.dp),
                 contentScale = ContentScale.Fit
             )
             Spacer(modifier = Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = label,
-                    fontSize = 11.sp,
-                    color = TextSecondary
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = label,
+                        fontSize = 11.sp,
+                        color = TextSecondary
+                    )
+                    if (progress > 0f) {
+                        Text(
+                            text = "${(progress * 100).toInt()}%",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = progressColor
+                        )
+                    }
+                }
                 Text(
                     text = value,
                     fontSize = 13.sp,
@@ -1047,7 +1073,10 @@ private fun GoalItem(
                         modifier = Modifier
                             .fillMaxWidth(animatedProgress)
                             .fillMaxHeight()
-                            .background(color, RoundedCornerShape(2.dp))
+                            .background(
+                                if (progress > 0f) progressColor else color,
+                                RoundedCornerShape(2.dp)
+                            )
                     )
                 }
             }
@@ -1093,7 +1122,7 @@ private fun BodyStatsSection(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Outlined.MonitorWeight,
-                    contentDescription = null,
+                    contentDescription = "Body Stats",
                     tint = SkyBlue,
                     modifier = Modifier.size(22.dp)
                 )
@@ -1247,7 +1276,7 @@ private fun SettingsSection(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Outlined.Settings,
-                    contentDescription = null,
+                    contentDescription = "Settings",
                     tint = TextSecondary,
                     modifier = Modifier.size(22.dp)
                 )
@@ -1335,7 +1364,7 @@ private fun SettingToggleItem(
         ) {
             Icon(
                 imageVector = icon,
-                contentDescription = null,
+                contentDescription = title,
                 tint = DeepBlack,
                 modifier = Modifier.size(20.dp)
             )
@@ -1403,7 +1432,7 @@ private fun QuickActionsSection(onExportClick: () -> Unit = {}) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Outlined.TouchApp,
-                    contentDescription = null,
+                    contentDescription = "Quick Actions",
                     tint = MintGreen,
                     modifier = Modifier.size(22.dp)
                 )
@@ -1474,7 +1503,7 @@ private fun QuickActionItem(
         ) {
             Icon(
                 imageVector = icon,
-                contentDescription = null,
+                contentDescription = title,
                 tint = DeepBlack,
                 modifier = Modifier.size(20.dp)
             )
@@ -1498,7 +1527,7 @@ private fun QuickActionItem(
         
         Icon(
             imageVector = Icons.Default.ChevronRight,
-            contentDescription = null,
+            contentDescription = "Navigate",
             tint = TextSecondary,
             modifier = Modifier.size(20.dp)
         )
@@ -1535,7 +1564,7 @@ private fun EditGoalsDialog(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Outlined.Flag,
-                    contentDescription = null,
+                    contentDescription = "Edit Daily Goals",
                     tint = PrimaryOrange
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -1584,7 +1613,7 @@ private fun EditGoalsDialog(
                     value = editWeight,
                     onValueChange = { editWeight = it },
                     label = "Target Weight (kg)",
-                    icon = R.drawable.weight
+                    icon = R.drawable.weightt
                 )
             }
         },
@@ -1628,7 +1657,7 @@ private fun GoalTextField(
         leadingIcon = {
             Image(
                 painter = painterResource(id = icon),
-                contentDescription = null,
+                contentDescription = label,
                 modifier = Modifier.size(24.dp)
             )
         },
@@ -1664,6 +1693,28 @@ private fun EditProfileDialog(
     var editWeight by remember { mutableStateOf(if (weight > 0) weight.toString() else "") }
     var editHeight by remember { mutableStateOf(if (height > 0) height.toString() else "") }
     
+    // Validation errors
+    var nameError by remember { mutableStateOf<String?>(null) }
+    var emailError by remember { mutableStateOf<String?>(null) }
+    var ageError by remember { mutableStateOf<String?>(null) }
+    var weightError by remember { mutableStateOf<String?>(null) }
+    var heightError by remember { mutableStateOf<String?>(null) }
+    
+    fun validate(): Boolean {
+        var valid = true
+        nameError = if (editName.isBlank()) { valid = false; "Name is required" } else null
+        emailError = if (editEmail.isBlank()) { valid = false; "Email is required" } 
+            else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(editEmail).matches()) { valid = false; "Invalid email" } 
+            else null
+        val ageVal = editAge.toIntOrNull()
+        ageError = if (ageVal == null || ageVal < 1 || ageVal > 150) { valid = false; "Age must be 1-150" } else null
+        val weightVal = editWeight.toFloatOrNull()
+        weightError = if (weightVal == null || weightVal < 20 || weightVal > 500) { valid = false; "Weight must be 20-500 kg" } else null
+        val heightVal = editHeight.toIntOrNull()
+        heightError = if (heightVal == null || heightVal < 50 || heightVal > 300) { valid = false; "Height must be 50-300 cm" } else null
+        return valid
+    }
+    
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = Color.White,
@@ -1672,7 +1723,7 @@ private fun EditProfileDialog(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Outlined.Person,
-                    contentDescription = null,
+                    contentDescription = "Edit Profile",
                     tint = PrimaryOrange
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -1762,49 +1813,56 @@ private fun EditProfileDialog(
                 
                 ProfileTextField(
                     value = editName,
-                    onValueChange = { editName = it },
+                    onValueChange = { editName = it; nameError = null },
                     label = "Full Name",
-                    icon = Icons.Outlined.Person
+                    icon = Icons.Outlined.Person,
+                    errorText = nameError
                 )
                 ProfileTextField(
                     value = editEmail,
-                    onValueChange = { editEmail = it },
+                    onValueChange = { editEmail = it; emailError = null },
                     label = "Email",
-                    icon = Icons.Outlined.Email
+                    icon = Icons.Outlined.Email,
+                    errorText = emailError
                 )
                 ProfileTextField(
                     value = editAge,
-                    onValueChange = { editAge = it },
+                    onValueChange = { editAge = it; ageError = null },
                     label = "Age",
                     icon = Icons.Outlined.Cake,
-                    keyboardType = KeyboardType.Number
+                    keyboardType = KeyboardType.Number,
+                    errorText = ageError
                 )
                 ProfileTextField(
                     value = editWeight,
-                    onValueChange = { editWeight = it },
+                    onValueChange = { editWeight = it; weightError = null },
                     label = "Weight (kg)",
                     icon = Icons.Outlined.MonitorWeight,
-                    keyboardType = KeyboardType.Decimal
+                    keyboardType = KeyboardType.Decimal,
+                    errorText = weightError
                 )
                 ProfileTextField(
                     value = editHeight,
-                    onValueChange = { editHeight = it },
+                    onValueChange = { editHeight = it; heightError = null },
                     label = "Height (cm)",
                     icon = Icons.Outlined.Height,
-                    keyboardType = KeyboardType.Number
+                    keyboardType = KeyboardType.Number,
+                    errorText = heightError
                 )
             }
         },
         confirmButton = {
             Button(
                 onClick = {
-                    onSave(
-                        editName,
-                        editEmail,
-                        editAge.toIntOrNull() ?: age,
-                        editWeight.toFloatOrNull() ?: weight,
-                        editHeight.toIntOrNull() ?: height
-                    )
+                    if (validate()) {
+                        onSave(
+                            editName,
+                            editEmail,
+                            editAge.toIntOrNull() ?: age,
+                            editWeight.toFloatOrNull() ?: weight,
+                            editHeight.toIntOrNull() ?: height
+                        )
+                    }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
                 shape = RoundedCornerShape(12.dp)
@@ -1826,29 +1884,41 @@ private fun ProfileTextField(
     onValueChange: (String) -> Unit,
     label: String,
     icon: ImageVector,
-    keyboardType: KeyboardType = KeyboardType.Text
+    keyboardType: KeyboardType = KeyboardType.Text,
+    errorText: String? = null
 ) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(label, fontSize = 12.sp) },
-        leadingIcon = {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = TextSecondary,
-                modifier = Modifier.size(22.dp)
+    Column {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { Text(label, fontSize = 12.sp) },
+            leadingIcon = {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = label,
+                    tint = if (errorText != null) Color(0xFFD32F2F) else TextSecondary,
+                    modifier = Modifier.size(22.dp)
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = if (errorText != null) Color(0xFFD32F2F) else SkyBlue,
+                unfocusedBorderColor = if (errorText != null) Color(0xFFD32F2F) else BorderColor,
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent
+            ),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            isError = errorText != null
+        )
+        if (errorText != null) {
+            Text(
+                text = errorText,
+                color = Color(0xFFD32F2F),
+                fontSize = 11.sp,
+                modifier = Modifier.padding(start = 16.dp, top = 2.dp)
             )
-        },
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = SkyBlue,
-            unfocusedBorderColor = BorderColor,
-            focusedContainerColor = Color.Transparent,
-            unfocusedContainerColor = Color.Transparent
-        ),
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType)
-    )
+        }
+    }
 }

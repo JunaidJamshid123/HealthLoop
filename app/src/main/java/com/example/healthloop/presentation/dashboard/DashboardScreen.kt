@@ -407,7 +407,7 @@ private fun TodaySummaryCard(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     SummaryItem(
-                        icon = R.drawable.weight,
+                        icon = R.drawable.weightt,
                         title = "Weight",
                         value = if (todayData.weight > 0) String.format(Locale.US, "%.1f", todayData.weight) else "—",
                         unit = "kg",
@@ -607,7 +607,7 @@ private fun WeeklyStatsSection(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     WeeklyStatItem(
-                        icon = R.drawable.weight,
+                        icon = R.drawable.weightt,
                         title = "Weight",
                         value = weightChange,
                         unit = "",
@@ -1316,7 +1316,7 @@ private fun TabChipsRow(
         "Water" to R.drawable.waterr,
         "Sleep" to R.drawable.sleepingg,
         "Steps" to R.drawable.walkk,
-        "Weight" to R.drawable.weight,
+        "Weight" to R.drawable.weightt,
         "Calories" to R.drawable.calaroiess,
         "Exercise" to R.drawable.excercisee
     )

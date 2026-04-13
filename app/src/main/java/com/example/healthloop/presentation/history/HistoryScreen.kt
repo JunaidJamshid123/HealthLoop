@@ -917,7 +917,7 @@ private fun WeightCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
-                painter = painterResource(id = R.drawable.weight),
+                painter = painterResource(id = R.drawable.weightt),
                 contentDescription = "Weight",
                 modifier = Modifier.size(28.dp),
                 contentScale = ContentScale.Fit

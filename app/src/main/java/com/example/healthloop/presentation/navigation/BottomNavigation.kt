@@ -23,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -47,17 +46,17 @@ import kotlinx.coroutines.launch
 // Drawer menu items
 sealed class DrawerMenuItem(
     val title: String,
-    val icon: ImageVector,
+    val icon: Int,
     val route: String? = null
 ) {
-    object Home : DrawerMenuItem("Home", Icons.Outlined.Home, "dashboard")
-    object History : DrawerMenuItem("History", Icons.Outlined.History, "history")
-    object Insights : DrawerMenuItem("Insights", Icons.Outlined.Insights, "analysis")
-    object AIAssistant : DrawerMenuItem("AI Assistant", Icons.Outlined.SmartToy, "assistant")
-    object Profile : DrawerMenuItem("Profile", Icons.Outlined.Person, "profile")
-    object About : DrawerMenuItem("About", Icons.Outlined.Info, "about")
-    object RateApp : DrawerMenuItem("Rate App", Icons.Outlined.Star)
-    object Share : DrawerMenuItem("Share App", Icons.Outlined.Share)
+    object Home : DrawerMenuItem("Home", R.drawable.home, "dashboard")
+    object History : DrawerMenuItem("History", R.drawable.history, "history")
+    object Insights : DrawerMenuItem("Insights", R.drawable.analysis, "analysis")
+    object AIAssistant : DrawerMenuItem("AI Assistant", R.drawable.bot, "assistant")
+    object Profile : DrawerMenuItem("Profile", R.drawable.userr, "profile")
+    object About : DrawerMenuItem("About",R.drawable.info, "about")
+    object RateApp : DrawerMenuItem("Rate App", R.drawable.starr)
+    object Share : DrawerMenuItem("Share App", R.drawable.share)
 }
 
 sealed class BottomNavItem(
@@ -69,7 +68,7 @@ sealed class BottomNavItem(
     object History : BottomNavItem("history", "History", R.drawable.history)
     object Analysis : BottomNavItem("analysis", "Insights", R.drawable.analysis)
     object Assistant : BottomNavItem("assistant", "AI Help", R.drawable.bot)
-    object Profile : BottomNavItem("profile", "Profile", R.drawable.user)
+    object Profile : BottomNavItem("profile", "Profile", R.drawable.userr)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -294,9 +293,10 @@ fun DrawerContent(
             NavigationDrawerItem(
                 icon = {
                     Icon(
-                        imageVector = item.icon,
+                        painter = painterResource(id = item.icon),
                         contentDescription = item.title,
-                        tint = if (isSelected) DeepBlack else TextSecondary
+                        tint = if (isSelected) DeepBlack else TextSecondary,
+                        modifier = Modifier.size(22.dp)
                     )
                 },
                 label = {
