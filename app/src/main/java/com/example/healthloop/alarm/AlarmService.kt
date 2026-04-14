@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.media.RingtoneManager
@@ -166,7 +167,7 @@ class AlarmService : Service() {
             .addAction(R.drawable.ic_notification, "Stop", stopPendingIntent)
             .build()
 
-        startForeground(FOREGROUND_ID, notification)
+        startForeground(FOREGROUND_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
     }
 
     override fun onDestroy() {

@@ -178,7 +178,13 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                             waterIntake = entry.waterIntake,
                             waterGoal = historyState.userGoals.waterGoal,
                             sleepHours = entry.sleepHours,
-                            sleepGoal = historyState.userGoals.sleepGoal
+                            sleepGoal = historyState.userGoals.sleepGoal,
+                            stepCount = entry.stepCount,
+                            stepsGoal = historyState.userGoals.stepsGoal,
+                            calories = entry.calories,
+                            caloriesGoal = historyState.userGoals.caloriesGoal,
+                            exerciseMinutes = entry.exerciseMinutes,
+                            exerciseGoal = historyState.userGoals.exerciseGoal
                         )
                     }
                     
@@ -400,12 +406,20 @@ private fun HealthOverviewCard(
     waterIntake: Int,
     waterGoal: Int,
     sleepHours: Float,
-    sleepGoal: Float
+    sleepGoal: Float,
+    stepCount: Int,
+    stepsGoal: Int,
+    calories: Int,
+    caloriesGoal: Int,
+    exerciseMinutes: Int,
+    exerciseGoal: Int
 ) {
-    val waterProgress = if (waterGoal > 0) waterIntake.toFloat() / waterGoal else 0f
-    val sleepProgress = if (sleepGoal > 0) sleepHours / sleepGoal else 0f
-    val sleepDeficit = maxOf(0f, sleepGoal - sleepHours)
-    
+    val waterProgress = if (waterGoal > 0) minOf(waterIntake.toFloat() / waterGoal, 1f) else 0f
+    val sleepProgress = if (sleepGoal > 0) minOf(sleepHours / sleepGoal, 1f) else 0f
+    val stepsProgress = if (stepsGoal > 0) minOf(stepCount.toFloat() / stepsGoal, 1f) else 0f
+    val caloriesProgress = if (caloriesGoal > 0) minOf(calories.toFloat() / caloriesGoal, 1f) else 0f
+    val exerciseProgress = if (exerciseGoal > 0) minOf(exerciseMinutes.toFloat() / exerciseGoal, 1f) else 0f
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = CardSurface),
@@ -435,9 +449,9 @@ private fun HealthOverviewCard(
                     modifier = Modifier.size(18.dp)
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -450,43 +464,50 @@ private fun HealthOverviewCard(
                         color = SkyBlue,
                         label = "$waterGoal Glasses Goal",
                         subLabel = "Water: $waterIntake glasses",
-                        value = ""
+                        progress = waterProgress
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
                     OverviewStatRow(
                         color = SoftGreen,
                         label = "${formatSleepTime(sleepHours)} Achieved",
                         subLabel = "Sleep Goal: ${formatSleepTime(sleepGoal)}",
-                        value = ""
+                        progress = sleepProgress
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    if (sleepDeficit > 0) {
-                        OverviewStatRow(
-                            color = CoralPink,
-                            label = "${formatSleepTime(sleepDeficit)} Missing",
-                            subLabel = "Sleep Deficit",
-                            value = ""
-                        )
-                    } else {
-                        OverviewStatRow(
-                            color = MintGreen,
-                            label = "Goal Achieved!",
-                            subLabel = "Great sleep!",
-                            value = ""
-                        )
-                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OverviewStatRow(
+                        color = PrimaryOrange,
+                        label = "$stepCount Steps",
+                        subLabel = "Goal: $stepsGoal",
+                        progress = stepsProgress
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OverviewStatRow(
+                        color = CoralPink,
+                        label = "$calories kcal",
+                        subLabel = "Goal: $caloriesGoal kcal",
+                        progress = caloriesProgress
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OverviewStatRow(
+                        color = MintGreen,
+                        label = "$exerciseMinutes min",
+                        subLabel = "Goal: $exerciseGoal min",
+                        progress = exerciseProgress
+                    )
                 }
-                
+
                 // Right side - Donut Chart
                 Box(
-                    modifier = Modifier.size(100.dp),
+                    modifier = Modifier.size(160.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     DonutChart(
                         data = listOf(
-                            DonutChartData(minOf(waterProgress, 1f) * 0.5f, SkyBlue),
-                            DonutChartData(minOf(sleepProgress, 1f) * 0.35f, SoftGreen),
-                            DonutChartData(0.15f, if (sleepDeficit > 0) CoralPink else MintGreen)
+                            DonutChartData(waterProgress * 0.20f, SkyBlue, R.drawable.waterr),
+                            DonutChartData(sleepProgress * 0.20f, SoftGreen, R.drawable.sleepingg),
+                            DonutChartData(stepsProgress * 0.20f, PrimaryOrange, R.drawable.walkk),
+                            DonutChartData(caloriesProgress * 0.20f, CoralPink, R.drawable.calaroiess),
+                            DonutChartData(exerciseProgress * 0.20f, MintGreen, R.drawable.excercisee)
                         )
                     )
                 }
@@ -500,7 +521,7 @@ private fun OverviewStatRow(
     color: Color,
     label: String,
     subLabel: String,
-    value: String
+    progress: Float
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically
@@ -529,7 +550,8 @@ private fun OverviewStatRow(
 
 data class DonutChartData(
     val value: Float,
-    val color: Color
+    val color: Color,
+    val iconRes: Int = 0
 )
 
 @Composable
@@ -537,25 +559,78 @@ private fun DonutChart(
     data: List<DonutChartData>,
     modifier: Modifier = Modifier
 ) {
-    Canvas(modifier = modifier.size(100.dp)) {
-        val strokeWidth = 18.dp.toPx()
-        val radius = (size.minDimension - strokeWidth) / 2
-        val center = Offset(size.width / 2, size.height / 2)
-        
+    // Calculate icon positions based on arc midpoints
+    data class IconPosition(val x: Float, val y: Float, val iconRes: Int, val color: Color)
+    val iconPositions = remember(data) {
+        val positions = mutableListOf<IconPosition>()
         var startAngle = -90f
-        
+        val labelRadiusFraction = 0.92f
+
         data.forEach { segment ->
             val sweepAngle = segment.value * 360f
-            drawArc(
-                color = segment.color,
-                startAngle = startAngle,
-                sweepAngle = sweepAngle - 4f, // Gap between segments
-                useCenter = false,
-                topLeft = Offset(center.x - radius, center.y - radius),
-                size = Size(radius * 2, radius * 2),
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-            )
+            if (sweepAngle > 0f && segment.iconRes != 0) {
+                val midAngle = Math.toRadians((startAngle + sweepAngle / 2).toDouble())
+                val xFraction = 0.5f + (labelRadiusFraction * 0.5f * kotlin.math.cos(midAngle)).toFloat()
+                val yFraction = 0.5f + (labelRadiusFraction * 0.5f * kotlin.math.sin(midAngle)).toFloat()
+                positions.add(IconPosition(xFraction, yFraction, segment.iconRes, segment.color))
+            }
             startAngle += sweepAngle
+        }
+        positions
+    }
+
+    Box(
+        modifier = modifier.size(160.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        // Draw arcs
+        Canvas(
+            modifier = Modifier
+                .size(120.dp)
+                .align(Alignment.Center)
+        ) {
+            val strokeWidth = 18.dp.toPx()
+            val radius = (size.minDimension - strokeWidth) / 2
+            val center = Offset(size.width / 2, size.height / 2)
+
+            var startAngle = -90f
+
+            data.forEach { segment ->
+                val sweepAngle = segment.value * 360f
+                if (sweepAngle > 0f) {
+                    drawArc(
+                        color = segment.color,
+                        startAngle = startAngle,
+                        sweepAngle = sweepAngle - 3f,
+                        useCenter = false,
+                        topLeft = Offset(center.x - radius, center.y - radius),
+                        size = Size(radius * 2, radius * 2),
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                    )
+                }
+                startAngle += sweepAngle
+            }
+        }
+
+        // Draw icons at calculated positions
+        iconPositions.forEach { pos ->
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .offset(
+                        x = ((pos.x - 0.5f) * 160).dp,
+                        y = ((pos.y - 0.5f) * 160).dp
+                    )
+                    .background(pos.color.copy(alpha = 0.2f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = pos.iconRes),
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    contentScale = ContentScale.Fit
+                )
+            }
         }
     }
 }
@@ -567,16 +642,16 @@ private fun MoodCheckInsSection(
     weeklyMoodData: List<Pair<String, String>>,
     mostCommonMood: String
 ) {
-    val allMoods = listOf(
-        Triple(R.drawable.angry, "Angry", Color(0xFFFFCDD2)),
-        Triple(R.drawable.sad, "Sad", Color(0xFFBBDEFB)),
-        Triple(R.drawable.anxious, "Anxious", Color(0xFFE1BEE7)),
-        Triple(R.drawable.confused, "Confused", Color(0xFFF8BBD0)),
-        Triple(R.drawable.happy, "Happy", Color(0xFFC8E6C9)),
-        Triple(R.drawable.exited, "Excited", Color(0xFFFFE0B2)),
-        Triple(R.drawable.calm, "Calm", Color(0xFFB2DFDB))
+    val moodMap = mapOf(
+        "angry" to Triple(R.drawable.angry, "Angry", Color(0xFFFFCDD2)),
+        "sad" to Triple(R.drawable.sad, "Sad", Color(0xFFBBDEFB)),
+        "anxious" to Triple(R.drawable.anxious, "Anxious", Color(0xFFE1BEE7)),
+        "confused" to Triple(R.drawable.confused, "Confused", Color(0xFFF8BBD0)),
+        "happy" to Triple(R.drawable.happy, "Happy", Color(0xFFC8E6C9)),
+        "excited" to Triple(R.drawable.exited, "Excited", Color(0xFFFFE0B2)),
+        "calm" to Triple(R.drawable.calm, "Calm", Color(0xFFB2DFDB))
     )
-    
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = WarmBeigeLight),
@@ -594,22 +669,76 @@ private fun MoodCheckInsSection(
                 fontWeight = FontWeight.SemiBold,
                 color = DeepBlack
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
-            // Mood emoji row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                allMoods.forEach { (icon, label, backgroundColor) ->
-                    val isSelected = currentMood.equals(label, ignoreCase = true)
-                    MoodEmojiItem(icon, label, backgroundColor, isSelected)
+
+            // Weekly mood timeline - show each day's logged mood
+            if (weeklyMoodData.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    weeklyMoodData.forEach { (day, mood) ->
+                        val moodInfo = moodMap[mood.lowercase()]
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            if (moodInfo != null) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .background(
+                                            color = moodInfo.third,
+                                            shape = CircleShape
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = moodInfo.first),
+                                        contentDescription = moodInfo.second,
+                                        modifier = Modifier.size(22.dp),
+                                        contentScale = ContentScale.Fit
+                                    )
+                                }
+                            } else {
+                                // No mood logged for this day
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .background(
+                                            color = Color(0xFFEEEEEE),
+                                            shape = CircleShape
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "—",
+                                        fontSize = 14.sp,
+                                        color = TextSecondary
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = day,
+                                fontSize = 10.sp,
+                                color = TextSecondary
+                            )
+                        }
+                    }
                 }
+            } else {
+                Text(
+                    text = "No mood data this week",
+                    fontSize = 12.sp,
+                    color = TextSecondary,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Summary text
             if (mostCommonMood.isNotEmpty()) {
                 Row(
@@ -632,14 +761,6 @@ private fun MoodCheckInsSection(
                         fontSize = 12.sp
                     )
                 }
-            } else {
-                Text(
-                    text = "No mood data this week",
-                    fontSize = 12.sp,
-                    color = TextSecondary,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center
-                )
             }
         }
     }
@@ -657,41 +778,6 @@ private fun getMoodEmoji(mood: String): String {
         "grateful" -> "🌟"
         "confused" -> "😕"
         else -> "😊"
-    }
-}
-
-@Composable
-private fun MoodEmojiItem(
-    icon: Int,
-    label: String,
-    backgroundColor: Color,
-    isSelected: Boolean
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(
-            modifier = Modifier
-                .size(if (isSelected) 42.dp else 36.dp)
-                .background(
-                    color = backgroundColor,
-                    shape = CircleShape
-                )
-                .then(
-                    if (isSelected) Modifier.background(
-                        color = backgroundColor,
-                        shape = CircleShape
-                    ) else Modifier
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Image(
-                painter = painterResource(id = icon),
-                contentDescription = label,
-                modifier = Modifier.size(if (isSelected) 26.dp else 22.dp),
-                contentScale = ContentScale.Fit
-            )
-        }
     }
 }
 

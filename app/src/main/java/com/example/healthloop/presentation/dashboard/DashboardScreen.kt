@@ -1313,7 +1313,7 @@ private fun HomeHeader(
                 )
             } else {
                 Image(
-                    painter = painterResource(id = R.drawable.user),
+                    painter = painterResource(id = R.drawable.userr),
                     contentDescription = "Profile",
                     modifier = Modifier
                         .size(28.dp)
