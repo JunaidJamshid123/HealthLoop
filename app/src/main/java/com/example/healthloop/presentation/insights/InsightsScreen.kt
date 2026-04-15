@@ -57,7 +57,26 @@ import com.patrykandpatrick.vico.core.entry.entryOf
 import com.patrykandpatrick.vico.core.axis.AxisPosition
 import com.patrykandpatrick.vico.core.axis.formatter.AxisValueFormatter
 import com.patrykandpatrick.vico.core.chart.line.LineChart as VicoLineChart
+import com.patrykandpatrick.vico.core.chart.values.AxisValuesOverrider
+import com.patrykandpatrick.vico.core.axis.AxisItemPlacer
 import com.patrykandpatrick.vico.compose.component.shape.shader.fromBrush
+import com.patrykandpatrick.vico.compose.component.lineComponent
+import com.patrykandpatrick.vico.compose.component.overlayingComponent
+import com.patrykandpatrick.vico.compose.component.shapeComponent
+import com.patrykandpatrick.vico.compose.component.textComponent
+import com.patrykandpatrick.vico.compose.dimensions.dimensionsOf
+import com.patrykandpatrick.vico.core.component.marker.MarkerComponent
+import com.patrykandpatrick.vico.core.component.shape.DashedShape
+import com.patrykandpatrick.vico.core.component.shape.ShapeComponent
+import com.patrykandpatrick.vico.core.component.shape.Shapes
+import com.patrykandpatrick.vico.core.component.shape.cornered.Corner
+import com.patrykandpatrick.vico.core.component.shape.cornered.MarkerCorneredShape
+import com.patrykandpatrick.vico.core.chart.dimensions.HorizontalDimensions
+import com.patrykandpatrick.vico.core.chart.insets.Insets
+import com.patrykandpatrick.vico.core.context.MeasureContext
+import com.patrykandpatrick.vico.core.extension.copyColor
+import com.patrykandpatrick.vico.core.marker.Marker
+import android.graphics.Typeface
 import kotlinx.coroutines.delay
 
 @Composable
@@ -163,7 +182,8 @@ fun InsightsScreen(
             HealthScoreCard(
                 score = data.healthScore,
                 label = data.healthScoreLabel,
-                scoreChange = data.scoreChange
+                scoreChange = data.scoreChange,
+                selectedPeriod = selectedPeriod
             )
         }
         
@@ -302,8 +322,19 @@ private fun PeriodSelectorChips(
 private fun HealthScoreCard(
     score: Int,
     label: String,
-    scoreChange: Int
+    scoreChange: Int,
+    selectedPeriod: TimePeriod = TimePeriod.WEEK
 ) {
+    val periodTitle = when (selectedPeriod) {
+        TimePeriod.WEEK -> "Weekly Health Score"
+        TimePeriod.MONTH -> "Monthly Health Score"
+        TimePeriod.YEAR -> "Yearly Health Score"
+    }
+    val periodChangeLabel = when (selectedPeriod) {
+        TimePeriod.WEEK -> "from prev week"
+        TimePeriod.MONTH -> "from prev month"
+        TimePeriod.YEAR -> "from prev year"
+    }
     val animatedScore by animateFloatAsState(
         targetValue = score / 100f,
         animationSpec = tween(1500),
@@ -371,7 +402,7 @@ private fun HealthScoreCard(
             
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Health Score",
+                    text = periodTitle,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = DeepBlack
@@ -400,13 +431,76 @@ private fun HealthScoreCard(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = if (scoreChange == 0) "No change" else "${if (scoreChange > 0) "+" else ""}$scoreChange from last period",
+                            text = if (scoreChange == 0) "No change" else "${if (scoreChange > 0) "+" else ""}$scoreChange $periodChangeLabel",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = DeepBlack
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+// ==================== CHART MARKER (TOUCH TOOLTIP) ====================
+@Composable
+private fun rememberChartMarker(): Marker {
+    val labelBackgroundColor = CardSurface
+    val labelBackground = remember(labelBackgroundColor) {
+        ShapeComponent(
+            MarkerCorneredShape(Corner.FullyRounded),
+            labelBackgroundColor.toArgb()
+        ).setShadow(
+            radius = 4f,
+            dy = 2f,
+            applyElevationOverlay = true,
+        )
+    }
+    val label = textComponent(
+        background = labelBackground,
+        lineCount = 1,
+        padding = dimensionsOf(8.dp, 4.dp),
+        typeface = Typeface.DEFAULT_BOLD,
+    )
+    val indicatorInnerComponent = shapeComponent(Shapes.pillShape, PrimaryOrange)
+    val indicatorCenterComponent = shapeComponent(Shapes.pillShape, Color.White)
+    val indicatorOuterComponent = shapeComponent(Shapes.pillShape, Color.White)
+    val indicator = overlayingComponent(
+        outer = indicatorOuterComponent,
+        inner = overlayingComponent(
+            outer = indicatorCenterComponent,
+            inner = indicatorInnerComponent,
+            innerPaddingAll = 5.dp,
+        ),
+        innerPaddingAll = 10.dp,
+    )
+    val guideline = lineComponent(
+        DeepBlack.copy(alpha = 0.15f),
+        2.dp,
+        DashedShape(Shapes.pillShape, 8f, 4f),
+    )
+    return remember(label, indicator, guideline) {
+        object : MarkerComponent(label, indicator, guideline) {
+            init {
+                indicatorSizeDp = 36f
+                onApplyEntryColor = { entryColor ->
+                    indicatorOuterComponent.color = entryColor.copyColor(alpha = 32)
+                    with(indicatorCenterComponent) {
+                        color = entryColor
+                        setShadow(radius = 12f, color = entryColor)
+                    }
+                }
+            }
+
+            override fun getInsets(
+                context: MeasureContext,
+                outInsets: Insets,
+                horizontalDimensions: HorizontalDimensions,
+            ) = with(context) {
+                outInsets.top = label.getHeight(context) +
+                    MarkerCorneredShape(Corner.FullyRounded).tickSizeDp.pixels +
+                    4f.pixels * 1.3f - 2f.pixels
             }
         }
     }
@@ -437,6 +531,18 @@ private fun WeeklyTrendsCard(
     val bottomAxisValueFormatter = AxisValueFormatter<AxisPosition.Horizontal.Bottom> { value, _ ->
         displayLabels.getOrElse(value.toInt()) { "" }
     }
+
+    val startAxisValueFormatter = AxisValueFormatter<AxisPosition.Vertical.Start> { value, _ ->
+        value.toInt().toString()
+    }
+
+    val marker = rememberChartMarker()
+
+    // Calculate summary stats
+    val activeData = displayData.filter { it > 0f }
+    val avgScore = if (activeData.isNotEmpty()) activeData.average().toFloat() else 0f
+    val maxScore = activeData.maxOrNull() ?: 0f
+    val minScore = if (activeData.isNotEmpty()) activeData.min() else 0f
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -474,7 +580,15 @@ private fun WeeklyTrendsCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "Tap on the chart to see score at each point",
+                fontSize = 11.sp,
+                color = DeepBlack.copy(alpha = 0.4f)
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             ProvideChartStyle(m3ChartStyle()) {
                 Chart(
@@ -483,6 +597,11 @@ private fun WeeklyTrendsCard(
                             VicoLineChart.LineSpec(
                                 lineColor = PrimaryOrangeDark.toArgb(),
                                 lineThicknessDp = 3f,
+                                pointSizeDp = 10f,
+                                point = shapeComponent(
+                                    shape = Shapes.pillShape,
+                                    color = PrimaryOrangeDark
+                                ),
                                 lineBackgroundShader = com.patrykandpatrick.vico.core.component.shape.shader.DynamicShaders.fromBrush(
                                     Brush.verticalGradient(
                                         colors = listOf(
@@ -492,19 +611,59 @@ private fun WeeklyTrendsCard(
                                     )
                                 )
                             )
+                        ),
+                        axisValuesOverrider = AxisValuesOverrider.fixed(
+                            minY = 0f,
+                            maxY = 100f
                         )
                     ),
                     model = chartEntryModel,
-                    startAxis = rememberStartAxis(),
+                    startAxis = rememberStartAxis(
+                        valueFormatter = startAxisValueFormatter,
+                        itemPlacer = remember { AxisItemPlacer.Vertical.default(maxItemCount = 5) }
+                    ),
                     bottomAxis = rememberBottomAxis(
                         valueFormatter = bottomAxisValueFormatter
                     ),
+                    marker = marker,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp)
                 )
             }
+
+            // Summary stats below the chart
+            if (activeData.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(14.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    TrendStatItem(label = "Avg", value = String.format("%.0f", avgScore), color = PrimaryOrangeDark)
+                    TrendStatItem(label = "High", value = String.format("%.0f", maxScore), color = SoftGreenDark)
+                    TrendStatItem(label = "Low", value = String.format("%.0f", minScore), color = CoralPink)
+                }
+            }
         }
+    }
+}
+
+@Composable
+private fun TrendStatItem(label: String, value: String, color: Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = value,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = color
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            color = DeepBlack.copy(alpha = 0.5f)
+        )
     }
 }
 

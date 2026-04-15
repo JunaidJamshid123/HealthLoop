@@ -4,12 +4,7 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Base: Light warm tint -->
     <path
-        android:fillColor="#FFF0D9"
+        android:fillColor="#FFFFFF"
         android:pathData="M0,0h108v108h-108z" />
-    <!-- Subtle center: PrimaryOrangeLight lighter -->
-    <path
-        android:fillColor="#FFE4BC"
-        android:pathData="M54,54m-54,0a54,54 0,1 1,108 0a54,54 0,1 1,-108 0" />
 </vector>
