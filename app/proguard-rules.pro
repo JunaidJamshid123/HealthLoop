@@ -21,7 +21,7 @@
 }
 
 # Keep API request/response models
--keep class com.example.healthloop.data.remote.** { *; }
+-keep class com.junaidjamshid.healthloop.data.remote.** { *; }
 
 # ============ ROOM ============
 -keep class * extends androidx.room.RoomDatabase
@@ -40,5 +40,5 @@
 -keep class com.patrykandpatrick.vico.** { *; }
 
 # ============ DOMAIN MODELS ============
--keep class com.example.healthloop.domain.model.** { *; }
--keep class com.example.healthloop.data.local.entity.** { *; }
+-keep class com.junaidjamshid.healthloop.domain.model.** { *; }
+-keep class com.junaidjamshid.healthloop.data.local.entity.** { *; }

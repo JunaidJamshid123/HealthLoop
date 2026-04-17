@@ -1,0 +1,84 @@
+package com.junaidjamshid.healthloop
+
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import com.junaidjamshid.healthloop.presentation.splash.SplashScreen
+import com.junaidjamshid.healthloop.presentation.starter.StarterScreen
+import com.junaidjamshid.healthloop.presentation.navigation.MainScreenWithBottomNav
+import com.junaidjamshid.healthloop.ui.theme.HealthLoopTheme
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.delay
+import androidx.compose.runtime.saveable.rememberSaveable
+
+enum class AppScreen {
+    SPLASH,
+    STARTER,
+    MAIN
+}
+
+@AndroidEntryPoint
+class MainActivity : ComponentActivity() {
+    companion object {
+        private const val SPLASH_DELAY = 3000L // 3 seconds
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        
+        // Request notification permission for Android 13+
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            val permission = Manifest.permission.POST_NOTIFICATIONS
+            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+                val requestPermissionLauncher =
+                    registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+                        // Optionally handle the result
+                    }
+                requestPermissionLauncher.launch(permission)
+            }
+        }
+
+        setContent {
+            var darkTheme by rememberSaveable { mutableStateOf(false) }
+            HealthLoopTheme(darkTheme = darkTheme) {
+                var currentScreen by remember { mutableStateOf(AppScreen.SPLASH) }
+
+                // Splash screen timer
+                LaunchedEffect(Unit) {
+                    delay(SPLASH_DELAY)
+                    currentScreen = AppScreen.STARTER
+                }
+
+                Surface(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .systemBarsPadding(),
+                    color = Color.Transparent
+                ) {
+                    when (currentScreen) {
+                        AppScreen.SPLASH -> SplashScreen()
+                        AppScreen.STARTER -> StarterScreen(
+                            onGetStarted = { currentScreen = AppScreen.MAIN }
+                        )
+                        AppScreen.MAIN -> MainScreenWithBottomNav(
+                            darkTheme = darkTheme,
+                            onToggleDarkTheme = { darkTheme = it }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}

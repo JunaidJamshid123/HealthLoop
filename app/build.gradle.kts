@@ -9,11 +9,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.healthloop"
+    namespace = "com.junaidjamshid.healthloop"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.healthloop"
+        applicationId = "com.junaidjamshid.healthloop"
         minSdk = 28
         targetSdk = 35
         versionCode = 1
